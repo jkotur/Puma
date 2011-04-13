@@ -23,6 +23,8 @@ class Scene :
 		self._update_proj()
 		self._set_lights()
 
+		glEnable( GL_DEPTH_TEST )
+
 	def draw( self ) :
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
@@ -62,7 +64,7 @@ class Scene :
 		self.set_ratio( float(w)/float(h) )
 
 	def mouse_move( self , df ) :
-		self.camera.rot( *map( lambda x : -x*.1 , df ) )
+		self.camera.rot( *map( lambda x : -x*.2 , df ) )
 
 	def key_pressed( self , mv ) :
 		self.camera.move( *map( lambda x : x*.25 , mv ) )

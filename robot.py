@@ -9,6 +9,7 @@ from OpenGL.GL import *
 
 from drawable import Drawable
 from mesh import Mesh
+from sparks import Sparks
 
 class Robot( Drawable ) :
 	def __init__( self , files ) :
@@ -19,6 +20,8 @@ class Robot( Drawable ) :
 			self.meshes.append( Mesh(path) )
 
 		self.colors = [ (.68,.16,.19) , (.68,.16,.19) , (.74,.73,.21) , (.15,.55,.27) , (.15,.55,.27) , (.14,.15,.12) ]
+
+		self.sparks = Sparks()
 
 	def resolve( self , pos , norm ) :
 		rots = None
@@ -36,6 +39,8 @@ class Robot( Drawable ) :
 			tr.rotation_matrix( rots[4] , (0,0,1) , (-1.72,.27,0) )
 		]
 
+		self.sparks.spawn( pos , norm )
+
 
 	def draw( self ) :
 		glMatrixMode(GL_MODELVIEW)
@@ -45,6 +50,12 @@ class Robot( Drawable ) :
 			glMultTransposeMatrixf( self.ms[i] )
 			self.meshes[i].draw()
 		glPopMatrix()
+
+		glColor3f( .99 , .98 , .28 )
+		self.sparks.draw()
+
+	def update( self , dt ) :
+		self.sparks.update( dt )
 
 	def inverse_kinematics( self , pos ,  normal ) :
 		l1 , l2 , l3 = .91 , .81 , .33

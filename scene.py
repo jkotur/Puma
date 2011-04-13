@@ -71,12 +71,14 @@ class Scene :
 
 		self._draw_scene()
 
+		self.robot.update( dt )
+
 		self.x+=dt*.3
 
 		self.last_time = self.time
 
 	def _draw_scene( self ) :
-		pos = np.dot( self.m , np.array( [ m.sin(self.x) , 0 , m.cos(self.x) , 1 ] ) )
+		pos = np.dot( self.m , np.array( [ m.sin(self.x*2)*m.cos(self.x/2.0) , 0 , m.cos(self.x) , 1 ] ) )
 		nrm = np.dot( self.m , np.array( [      0        ,-1 ,      0        , 0 ] ) )
 
 		self.robot.resolve( pos , nrm )

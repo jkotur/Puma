@@ -14,6 +14,8 @@ from scene import Scene
 
 ui_file = "puma.ui"
 
+meshes = [ 'data/mesh{0}.mesh'.format(i) for i in range(1,7) ]
+
 class App(object):
 	"""Application main class"""
 
@@ -39,7 +41,7 @@ class App(object):
 		height = self.drawing_area.allocation.height
 		ratio = float(width)/float(height)
 
-		self.scene = Scene( self.fov , ratio , self.near )
+		self.scene = Scene( self.fov , ratio , self.near , meshes )
 		self.drawing_area.add( self.scene )
 
 		builder.connect_signals(self)
@@ -74,7 +76,7 @@ class App(object):
 	def _on_mouse_motion( self , widget , data=None ) :
 		diff = map( op.sub , self.mouse_pos , (-data.x , data.y) )
 
-		self.scene.mouse_move( diff , axis1 , axis2 )
+		self.scene.mouse_move( diff )
 
 		self.mouse_pos = -data.x , data.y
 		self.drawing_area.queue_draw()

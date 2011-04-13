@@ -1,4 +1,7 @@
 
+import sys
+import time
+
 import operator as op
 
 from camera import Camera
@@ -7,6 +10,12 @@ from robot import Robot
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
+import math as m
+
+if sys.platform.startswith('win'):
+    timer = time.clock
+else:
+    timer = time.time
 
 class Scene :
 	def __init__( self , fovy , ratio , near , far , robot_files ) :
@@ -19,6 +28,10 @@ class Scene :
 
 		self.robot = Robot( robot_files )
 
+		self.x = 0.0
+
+		self.last_time = timer()
+
 	def gfx_init( self ) :
 		self._update_proj()
 		self._set_lights()
@@ -26,11 +39,20 @@ class Scene :
 		glEnable( GL_DEPTH_TEST )
 
 	def draw( self ) :
+		self.time = timer()
+
+		dt = self.time - self.last_time
+
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 
 		self.camera.look()
-		self.robot.draw()
+
+		self.robot.draw( ( m.sin(self.x) , m.sin(self.x*3)*.5 , m.cos(self.x) ) , (m.sin(self.x*.1),m.cos(self.x*.1),0) )
+
+		self.x+=dt*.3
+
+		self.last_time = self.time
 
 	def _update_proj( self ) :
 		glMatrixMode(GL_PROJECTION)

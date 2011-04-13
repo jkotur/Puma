@@ -69,6 +69,12 @@ class App(object):
 		win_main.connect('key-press-event'  , self._on_key_pressed  )
 		win_main.connect('key-release-event', self._on_key_released )
 
+		gtk.timeout_add( 10 , self._refresh )
+
+	def _refresh( self ) :
+		self.drawing_area.queue_draw()
+		return True
+
 	def _after_draw( self , widget , data=None ) :
 		self.update_statusbar()
 

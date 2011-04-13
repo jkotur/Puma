@@ -3,11 +3,15 @@ import numpy.linalg as la
 
 import random as rnd
 
+import math as m
+
 import transformations as tr
 
 from drawable import Drawable
 
 from OpenGL.GL import *
+
+from copy import copy
 
 class Spark( Drawable ) :
 	G = np.array( (0,-.9,0) )
@@ -15,29 +19,35 @@ class Spark( Drawable ) :
 	def __init__( self , pos , vel , lifeleft ) :
 		Drawable.__init__( self )
 
-		self.pos = np.resize( pos , 3 )
-		self.vel = np.resize( vel , 3 ) * .05
+		self.pvel = np.resize( vel , 3 ) * .05
+		self. vel = copy(self.pvel)
+		self.ppos = np.resize( pos , 3 )
+		self. pos = copy(self.ppos)
+
+		for i in range(10) :
+			self. vel += .01 * self.G
+			self. pos += .01 * self.vel
+
 		self.life = lifeleft
 
 	def draw( self ) :
-		glPushMatrix()
-		glTranslatef( *self.pos )
-		glScalef( .01 , .01 , .01 )
+		glColor4f( .99 , .98 , .28 , m.log( self.life + 1 , 2 ) )
 
-		glBegin(GL_LINE_LOOP)
-		glVertex3f(0,1,0)
-		glVertex3f(1,0,0)
-		glVertex3f(0,0,1)
-		glVertex3f(0,-1,0)
-		glVertex3f(-1,0,0)
-		glVertex3f(0,0,-1)
+		glBegin(GL_LINES)
+		glVertex3f(*self.ppos)
+		glVertex3f(*self. pos)
 		glEnd()
-		glPopMatrix()
 
 	def update( self , dt ) : 
-		self.vel += dt * self.G
-		self.pos += dt * self.vel
+		self.pvel += dt * self.G
+		self.ppos += dt * self.pvel
+
+		self. vel += dt * self.G
+		self. pos += dt * self.vel
+
 		self.life-= dt
+
+		return not self.died()
 
 	def died( self ) :
 		return self.life < 0 
@@ -49,20 +59,22 @@ class Sparks( Drawable ) :
 		self.sparks = []
 
 	def draw( self ) :
+		glEnable(GL_BLEND)
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE)
+
 		for s in self.sparks :
 			s.draw()
 
-	def update( self , dt ) :
-		for s in self.sparks :
-			s.update( dt )
+		glDisable(GL_BLEND)
 
-		self.sparks = [ s for s in self.sparks if not s.died() ]
+	def update( self , dt ) :
+		for i in reversed(xrange(len(self.sparks))) :
+			if not self.sparks[i].update( dt ) : del self.sparks[i]
 
 	def spawn( self , pos , norm ) :
-		for i in range(20) :
+		for i in range(30) :
 			life = rnd.gauss(.2,.4)
-			vel = np.array( [ rnd.gauss(norm[0],2) , rnd.gauss(norm[1],2) , rnd.gauss(norm[3],2) ] )
-#            vel = vel / la.norm(vel)
+			vel = np.array([ rnd.gauss(norm[0],3) , rnd.gauss(norm[1],3) , rnd.gauss(norm[3],3) ])
 			if life < 0 : continue
 			self.sparks.append( Spark( pos , vel , life ) )
 

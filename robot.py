@@ -51,7 +51,6 @@ class Robot( Drawable ) :
 			self.meshes[i].draw()
 		glPopMatrix()
 
-		glColor3f( .99 , .98 , .28 )
 		self.sparks.draw()
 
 	def update( self , dt ) :

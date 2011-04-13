@@ -139,9 +139,11 @@ class App(object):
 		# Configure OpenGL framebuffer.
 		# Try to get a double-buffered framebuffer configuration,
 		# if not successful then try to get a single-buffered one.
-		display_mode = (gtk.gdkgl.MODE_RGB    |
+		display_mode = (
+				gtk.gdkgl.MODE_RGB    |
 				gtk.gdkgl.MODE_DEPTH  |
-				gtk.gdkgl.MODE_DOUBLE)
+				gtk.gdkgl.MODE_STENCIL|
+				gtk.gdkgl.MODE_DOUBLE )
 		try:
 			glconfig = gtk.gdkgl.Config(mode=display_mode)
 		except gtk.gdkgl.NoMatches:

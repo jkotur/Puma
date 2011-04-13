@@ -18,25 +18,32 @@ class Robot( Drawable ) :
 		for path in files :
 			self.meshes.append( Mesh(path) )
 
-	def draw( self , pos , norm ) :
+		self.colors = [ (.68,.16,.19) , (.68,.16,.19) , (.74,.73,.21) , (.15,.55,.27) , (.15,.55,.27) , (.14,.15,.12) ]
+
+	def resolve( self , pos , norm ) :
+		rots = None
 		try :
 			rots = self.inverse_kinematics( pos , norm ) 
 		except ValueError , e :
 			rots = [0]*5
 
+		self.ms = [ 
+			tr.identity_matrix() ,
+			tr.rotation_matrix( rots[0] , (0,1,0) , (0,0,0) ) ,
+			tr.rotation_matrix( rots[1] , (0,0,1) , (0,.27,0) ) ,
+			tr.rotation_matrix( rots[2] , (0,0,1) , (-.91,.27,0) ) ,
+			tr.rotation_matrix( rots[3] , (1,0,0) , (0,.27,-.26) ) ,
+			tr.rotation_matrix( rots[4] , (0,0,1) , (-1.72,.27,0) )
+		]
+
+
+	def draw( self ) :
 		glMatrixMode(GL_MODELVIEW)
 		glPushMatrix()
-		self.meshes[0].draw()
-		glMultTransposeMatrixf( tr.rotation_matrix( rots[0] , (0,1,0) , (0,0,0) ) )
-		self.meshes[1].draw()
-		glMultTransposeMatrixf( tr.rotation_matrix( rots[1] , (0,0,1) , (0,.27,0) ) )
-		self.meshes[2].draw()
-		glMultTransposeMatrixf( tr.rotation_matrix( rots[2] , (0,0,1) , (-.91,.27,0) ) )
-		self.meshes[3].draw()
-		glMultTransposeMatrixf( tr.rotation_matrix( rots[3] , (1,0,0) , (0,.27,-.26) ) )
-		self.meshes[4].draw()
-		glMultTransposeMatrixf( tr.rotation_matrix( rots[4] , (0,0,1) , (-1.72,.27,-.26) ) )
-		self.meshes[5].draw()
+		for i in range(6) :
+			glColor3f(*self.colors[i])
+			glMultTransposeMatrixf( self.ms[i] )
+			self.meshes[i].draw()
 		glPopMatrix()
 
 	def inverse_kinematics( self , pos ,  normal ) :

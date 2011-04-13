@@ -57,7 +57,7 @@ class App(object):
 
 		builder.connect_signals(self)
 
-		self.statbar = builder.get_object('statbar')
+#        self.statbar = builder.get_object('statbar')
 
 		self.drawing_area.connect('motion_notify_event',self._on_mouse_motion)
 		self.drawing_area.connect('button_press_event',self._on_button_pressed)

@@ -2,10 +2,8 @@
 import sys
 import time
 
-import operator as op
-
-from camera import Camera
-from robot import Robot
+import numpy as np
+import transformations as tr
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -17,6 +15,10 @@ if sys.platform.startswith('win'):
 else:
     timer = time.time
 
+from camera import Camera
+from robot import Robot
+from plane import Plane
+
 class Scene :
 	def __init__( self , fovy , ratio , near , far , robot_files ) :
 		self.fovy = fovy
@@ -25,6 +27,7 @@ class Scene :
 		self.ratio = ratio
 
 		self.camera = Camera( ( 0 , 1 , -5 ) , ( 0 , 0 , 0 ) , ( 0 , 1 , 0 ) )
+		self.plane  = Plane( (2,2) )
 
 		self.robot = Robot( robot_files )
 
@@ -32,11 +35,23 @@ class Scene :
 
 		self.last_time = timer()
 
+		self.plane_alpha = 30.0 / 180.0 * m.pi
+
+		self._make_plane_matrix()
+
+	def _make_plane_matrix( self ) :
+		r = tr.rotation_matrix( -self.plane_alpha , (0,0,1) )
+		s = tr.scale_matrix( .25 )
+		t = tr.translation_matrix( (-1.5,.25,.0) )
+
+		self.m = np.dot( np.dot( t , s ) , r )
+
 	def gfx_init( self ) :
 		self._update_proj()
 		self._set_lights()
 
 		glEnable( GL_DEPTH_TEST )
+		glEnable( GL_NORMALIZE )
 
 	def draw( self ) :
 		self.time = timer()
@@ -48,7 +63,11 @@ class Scene :
 
 		self.camera.look()
 
-		self.robot.draw( ( m.sin(self.x) , m.sin(self.x*3)*.5 , m.cos(self.x) ) , (m.sin(self.x*.1),m.cos(self.x*.1),0) )
+		pos = np.dot( self.m , np.array( [ m.sin(self.x) , 0 , m.cos(self.x) , 1 ] ) )
+		nrm = np.dot( self.m , np.array( [      0        , 1 ,      0        , 0 ] ) )
+
+		self.robot.draw( pos , nrm )
+		self.plane.draw( self.m )
 
 		self.x+=dt*.3
 

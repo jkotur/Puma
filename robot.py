@@ -19,7 +19,10 @@ class Robot( Drawable ) :
 			self.meshes.append( Mesh(path) )
 
 	def draw( self , pos , norm ) :
-		rots = self.inverse_kinematics( pos , norm ) 
+		try :
+			rots = self.inverse_kinematics( pos , norm ) 
+		except ValueError , e :
+			rots = [0]*5
 
 		glMatrixMode(GL_MODELVIEW)
 		glPushMatrix()

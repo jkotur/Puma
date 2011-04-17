@@ -46,6 +46,11 @@ class App(object):
 
 		win_main = builder.get_object("win_main")
 
+		win_main.set_events( gtk.gdk.KEY_PRESS_MASK | gtk.gdk.KEY_RELEASE_MASK )
+
+		win_main.connect('key-press-event'  , self._on_key_pressed  )
+		win_main.connect('key-release-event', self._on_key_released )
+
 		win_main.show_all()
 
 		width = self.drawing_area.allocation.width
@@ -63,11 +68,6 @@ class App(object):
 		self.drawing_area.connect('button_press_event',self._on_button_pressed)
 		self.drawing_area.connect('configure_event',self._on_reshape)
 		self.drawing_area.connect_after('expose_event',self._after_draw)
-
-		win_main.set_events( gtk.gdk.KEY_PRESS_MASK | gtk.gdk.KEY_RELEASE_MASK )
-
-		win_main.connect('key-press-event'  , self._on_key_pressed  )
-		win_main.connect('key-release-event', self._on_key_released )
 
 		gtk.timeout_add( 1 , self._refresh )
 

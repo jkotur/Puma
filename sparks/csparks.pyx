@@ -1,24 +1,19 @@
-import numpy as np
-import numpy.linalg as la
+
+import cython
 
 import random as rnd
-
 import math as m
 
-import transformations as tr
-
-from drawable import Drawable
+import numpy as np
 
 from OpenGL.GL import *
 
 from copy import copy
 
-class Spark( Drawable ) :
+class Spark :
 	G = np.array( (0,-.9,0) )
 
 	def __init__( self , pos , vel , lifeleft ) :
-		Drawable.__init__( self )
-
 		self.pvel = np.resize( vel , 3 ) * .05
 		self. vel = copy(self.pvel)
 		self.ppos = np.resize( pos , 3 )
@@ -52,10 +47,8 @@ class Spark( Drawable ) :
 	def died( self ) :
 		return self.life < 0 
 
-class Sparks( Drawable ) :
+class Sparks :
 	def __init__( self ) :
-		Drawable.__init__( self )
-
 		self.sparks = []
 
 	def draw( self ) :
@@ -70,9 +63,10 @@ class Sparks( Drawable ) :
 	def update( self , dt ) :
 		for i in reversed(xrange(len(self.sparks))) :
 			if not self.sparks[i].update( dt ) : del self.sparks[i]
+		print len(self.sparks)
 
 	def spawn( self , pos , norm ) :
-		for i in range(30) :
+		for i in range(200) :
 			life = rnd.gauss(.2,.4)
 			vel = np.array([ rnd.gauss(norm[0],3) , rnd.gauss(norm[1],3) , rnd.gauss(norm[3],3) ])
 			if life < 0 : continue

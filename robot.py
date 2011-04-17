@@ -9,7 +9,7 @@ from OpenGL.GL import *
 
 from drawable import Drawable
 from mesh import Mesh
-from sparks import Sparks
+from csparks import Sparks
 
 class Robot( Drawable ) :
 	def __init__( self , files ) :

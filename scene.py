@@ -43,7 +43,7 @@ class Scene :
 	def _make_plane_matrix( self ) :
 		r = tr.rotation_matrix( self.plane_alpha , (0,0,1) )
 		s = tr.scale_matrix( 1 )
-		t = tr.translation_matrix( (-1.25,.7,-.2) )
+		t = tr.translation_matrix( (-1.25,.7,.05) )
 
 		self.m = np.dot( np.dot( t , s ) , r )
 		self.im = la.inv( self.m )
@@ -73,12 +73,14 @@ class Scene :
 
 		self.robot.update( dt )
 
+		print dt
+
 		self.x+=dt*.3
 
 		self.last_time = self.time
 
 	def _draw_scene( self ) :
-		pos = np.dot( self.m , np.array( [ m.sin(self.x*2)*m.cos(self.x/2.0) , 0 , m.cos(self.x) , 1 ] ) )
+		pos = np.dot( self.m , np.array( [ m.sin(self.x*7)*m.cos(self.x/3.0) , 0 , m.cos(self.x*5) , 1 ] ) )
 		nrm = np.dot( self.m , np.array( [      0        ,-1 ,      0        , 0 ] ) )
 
 		self.robot.resolve( pos , nrm )

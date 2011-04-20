@@ -9,7 +9,7 @@ from OpenGL.GL import *
 
 from drawable import Drawable
 from mesh import Mesh
-from csparks import Sparks
+from sparks import Sparks
 
 class Robot( Drawable ) :
 	def __init__( self , files ) :
@@ -39,7 +39,7 @@ class Robot( Drawable ) :
 			tr.rotation_matrix( rots[4] , (0,0,1) , (-1.72,.27,0) )
 		]
 
-		self.sparks.spawn( pos , norm )
+		self.sparks.spawn( np.resize(pos,3) , norm )
 
 
 	def draw( self ) :

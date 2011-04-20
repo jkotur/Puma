@@ -1,4 +1,6 @@
 
+cimport numpy as np
+
 import cython
 
 import random as rnd
@@ -6,69 +8,77 @@ import math as m
 
 import numpy as np
 
-from OpenGL.GL import *
+cdef float Gx = 0
+cdef float Gy =-9
+cdef float Gz = 0
 
-from copy import copy
+@cython.boundscheck(False)
+cpdef int update( np.ndarray[ double ] pos , np.ndarray[ double ] vel , np.ndarray[ double ] col , np.ndarray[ double ] life , double dt , int l ) :
+	cdef int id
+	cdef int cid
+	cdef int end = l-1
+	cdef int eid
+	cdef int i = 0
 
-class Spark :
-	G = np.array( (0,-.9,0) )
+	while i < l :
+		id = i*2*3
+		cid = i*2*4
 
-	def __init__( self , pos , vel , lifeleft ) :
-		self.pvel = np.resize( vel , 3 ) * .05
-		self. vel = copy(self.pvel)
-		self.ppos = np.resize( pos , 3 )
-		self. pos = copy(self.ppos)
+		life[i] -= dt
 
-		for i in range(10) :
-			self. vel += .01 * self.G
-			self. pos += .01 * self.vel
+		if life[i] < 0 :
+			l -= 1
+			if i >= l : return l
+			eid = l*3*2
 
-		self.life = lifeleft
+			vel[id  ] = vel[eid  ]
+			vel[id+1] = vel[eid+1]
+			vel[id+2] = vel[eid+2]
+			vel[id+3] = vel[eid+3]
+			vel[id+4] = vel[eid+4]
+			vel[id+5] = vel[eid+5]
+			pos[id  ] = pos[eid  ]
+			pos[id+1] = pos[eid+1]
+			pos[id+2] = pos[eid+2]
+			pos[id+3] = pos[eid+3]
+			pos[id+4] = pos[eid+4]
+			pos[id+5] = pos[eid+5]
+			col[cid+3] = col[l*4*2+3]
+			col[cid+7] = col[l*4*2+7]
+			life  [i] = life [l]
 
-	def draw( self ) :
-		glColor4f( .99 , .98 , .28 , m.log( self.life + 1 , 2 ) )
+			life[i] -= dt
 
-		glBegin(GL_LINES)
-		glVertex3f(*self.ppos)
-		glVertex3f(*self. pos)
-		glEnd()
+		vel[id  ] += dt * Gx
+		vel[id+1] += dt * Gy
+		vel[id+2] += dt * Gz
 
-	def update( self , dt ) : 
-		self.pvel += dt * self.G
-		self.ppos += dt * self.pvel
+		pos[id  ] += dt * vel[id  ]
+		pos[id+1] += dt * vel[id+1]
+		pos[id+2] += dt * vel[id+2]
 
-		self. vel += dt * self.G
-		self. pos += dt * self.vel
+		vel[id+3] += dt * Gx
+		vel[id+4] += dt * Gy
+		vel[id+5] += dt * Gz
 
-		self.life-= dt
+		pos[id+3] += dt * vel[id+3]
+		pos[id+4] += dt * vel[id+4]
+		pos[id+5] += dt * vel[id+5]
 
-		return not self.died()
+		col[cid+3] = col[cid+7] = m.log( life[i] + 1 , 2 )
 
-	def died( self ) :
-		return self.life < 0 
+		i += 1
 
-class Sparks :
-	def __init__( self ) :
-		self.sparks = []
+	return l
 
-	def draw( self ) :
-		glEnable(GL_BLEND)
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE)
-
-		for s in self.sparks :
-			s.draw()
-
-		glDisable(GL_BLEND)
-
-	def update( self , dt ) :
-		for i in reversed(xrange(len(self.sparks))) :
-			if not self.sparks[i].update( dt ) : del self.sparks[i]
-		print len(self.sparks)
-
-	def spawn( self , pos , norm ) :
-		for i in range(200) :
-			life = rnd.gauss(.2,.4)
-			vel = np.array([ rnd.gauss(norm[0],3) , rnd.gauss(norm[1],3) , rnd.gauss(norm[3],3) ])
-			if life < 0 : continue
-			self.sparks.append( Spark( pos , vel , life ) )
+@cython.boundscheck(False)
+cpdef iterate( np.ndarray[ double ] pos , np.ndarray[ double ] vel , double dt ) :
+	for i in range(10) :
+		vel[0] += dt * Gx
+		vel[1] += dt * Gy
+		vel[2] += dt * Gz
+		pos[0] += dt * vel[0]
+		pos[1] += dt * vel[1]
+		pos[2] += dt * vel[2]
+	return 0
 

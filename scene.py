@@ -38,6 +38,8 @@ class Scene :
 
 		self.plane_alpha = 65.0 / 180.0 * m.pi
 
+		self.lpos = [ 2 , 5 , 0 ]
+
 		self._make_plane_matrix()
 
 	def _make_plane_matrix( self ) :
@@ -51,13 +53,16 @@ class Scene :
 
 	def gfx_init( self ) :
 		self._update_proj()
-		self._set_lights()
 
 		glEnable( GL_DEPTH_TEST )
 		glEnable( GL_NORMALIZE )
 		glEnable( GL_CULL_FACE )
 		glEnable( GL_COLOR_MATERIAL )
 		glColorMaterial( GL_FRONT , GL_AMBIENT_AND_DIFFUSE )
+
+		self.robot.create_volumes( self.lpos )
+
+		self.draw()
 
 	def draw( self ) :
 		self.time = timer()
@@ -68,6 +73,11 @@ class Scene :
 		glLoadIdentity()
 
 		self.camera.look()
+
+#        self.lpos = [ m.sin(self.x)*2 , 1 , m.cos(self.x)*2 ]
+
+		self._set_lights()
+#        self.robot.create_volumes( self.lpos )
 
 		self._draw_scene()
 
@@ -121,11 +131,67 @@ class Scene :
 
 		glColor4f(.7,.7,.7,.85)
 
+		glDisable( GL_CULL_FACE )
 		self.plane.draw( self.m )
 
 		glDisable( GL_BLEND )
 
+		glPushAttrib(GL_ALL_ATTRIB_BITS)
+
+		glClear(GL_STENCIL_BUFFER_BIT)
+		glDepthMask(0);
+		glColorMask(0,0,0,0);
+		glEnable(GL_CULL_FACE);
+		glEnable(GL_STENCIL_TEST);
+
+		glStencilMask(~0);
+		glStencilFunc(GL_ALWAYS, 0, ~0);
+
+		# Increment for front faces
+		glCullFace(GL_BACK)
+		glStencilOp(GL_KEEP,   # stencil test fail
+                    GL_KEEP,   # depth test fail
+                    GL_INCR);  # depth test pass
+
+		self.robot.draw_volumes()
+
+		# Decrement for back faces
+		glCullFace(GL_FRONT);
+		glStencilOp(GL_KEEP,   # stencil test fail
+					GL_KEEP,   # depth test fail
+					GL_DECR);  # depth test pass
+
+		self.robot.draw_volumes()
+
+#        glClear(GL_STENCIL_BUFFER_BIT)
+#        glColorMask(0, 0, 0, 0);
+#        glDisable(GL_LIGHTING)
+#        glStencilFunc(GL_ALWAYS, 0, ~0);
+#        glStencilMask(~0);
+
+#        glActiveStencilFaceEXT(GL_FRONT)
+#        glStencilOp(GL_KEEP, GL_DECR_WRAP_EXT, GL_KEEP)
+#        glActiveStencilFaceEXT(GL_BACK)
+#        glStencilOp(GL_KEEP, GL_INCR_WRAP_EXT, GL_KEEP)
+#        glCullFace(GL_NONE)
+
+#        glEnable(GL_LIGHTING)
+		glStencilFunc(GL_EQUAL, 0, ~0)
+#        glActiveStencilFaceEXT(GL_FRONT)
+#        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP)
+#        glActiveStencilFaceEXT(GL_BACK)
+
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP)
+		glDepthFunc(GL_EQUAL)
+		glColorMask(1, 1, 1, 1)
+		glDepthMask(1)
+		glCullFace(GL_BACK)
+
 		self.robot.draw()
+
+		glPopAttrib()
+
+#        self.robot.draw()
 
 	def _update_proj( self ) :
 		glMatrixMode(GL_PROJECTION)
@@ -138,7 +204,7 @@ class Scene :
 		glLightfv(GL_LIGHT0, GL_AMBIENT, [ 0.2 , 0.2 , 0.2 ] );
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [ 0.9 , 0.9 , 0.9 ] );
 		glLightfv(GL_LIGHT0, GL_SPECULAR,[ 0.3 , 0.3 , 0.3 ] );
-		glLightfv(GL_LIGHT0, GL_POSITION, [ 2 , 5 , 0 ] );
+		glLightfv(GL_LIGHT0, GL_POSITION, self.lpos );
 		glEnable(GL_LIGHT0); 
 						 
 	def set_fov( self , fov ) :

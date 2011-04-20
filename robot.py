@@ -41,6 +41,11 @@ class Robot( Drawable ) :
 
 		self.sparks.spawn( np.resize(pos,3) , norm )
 
+	def create_volumes( self , pos ) :
+		p = np.resize( pos , 3 )
+
+		for i in range(6) :
+			self.meshes[i].create_volume(p)
 
 	def draw( self ) :
 		glMatrixMode(GL_MODELVIEW)
@@ -52,6 +57,10 @@ class Robot( Drawable ) :
 		glPopMatrix()
 
 		self.sparks.draw()
+
+	def draw_volumes( self ) :
+		for i in range(1) :
+			self.meshes[i].draw_volume()
 
 	def update( self , dt ) :
 		self.sparks.update( dt )

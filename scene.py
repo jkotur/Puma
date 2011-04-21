@@ -38,7 +38,7 @@ class Scene :
 
 		self.plane_alpha = 65.0 / 180.0 * m.pi
 
-		self.lpos = [ 2 , 5 , 0 ]
+		self.lpos = [ 1 ,-1 , 0 ]
 
 		self._make_plane_matrix()
 
@@ -136,6 +136,11 @@ class Scene :
 
 		glDisable( GL_BLEND )
 
+		# ambinet pass
+		self._set_ambient()
+		self.robot.draw()
+
+		# lighting pass
 		glPushAttrib(GL_ALL_ATTRIB_BITS)
 
 		glClear(GL_STENCIL_BUFFER_BIT)
@@ -144,6 +149,7 @@ class Scene :
 		glEnable(GL_CULL_FACE);
 		glEnable(GL_STENCIL_TEST);
 
+		glEnable(GL_LIGHTING)
 		glStencilMask(~0);
 		glStencilFunc(GL_ALWAYS, 0, ~0);
 
@@ -182,16 +188,20 @@ class Scene :
 #        glActiveStencilFaceEXT(GL_BACK)
 
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP)
-		glDepthFunc(GL_EQUAL)
+		glDepthFunc(GL_LEQUAL)
 		glColorMask(1, 1, 1, 1)
 		glDepthMask(1)
 		glCullFace(GL_BACK)
 
+		glBlendFunc(GL_ONE,GL_ONE)
+		glEnable(GL_BLEND)
+		self._set_diffuse()
 		self.robot.draw()
+		glDisable(GL_BLEND)
 
 		glPopAttrib()
 
-#        self.robot.draw()
+		self.robot.draw_volumes( True )
 
 	def _update_proj( self ) :
 		glMatrixMode(GL_PROJECTION)
@@ -202,6 +212,22 @@ class Scene :
 	def _set_lights( self ) :
 		glEnable(GL_LIGHTING);
 		glLightfv(GL_LIGHT0, GL_AMBIENT, [ 0.2 , 0.2 , 0.2 ] );
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [ 0.9 , 0.9 , 0.9 ] );
+		glLightfv(GL_LIGHT0, GL_SPECULAR,[ 0.3 , 0.3 , 0.3 ] );
+		glLightfv(GL_LIGHT0, GL_POSITION, self.lpos );
+		glEnable(GL_LIGHT0); 
+
+	def _set_ambient( self ) :
+		glEnable(GL_LIGHTING);
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [ 0.2 , 0.2 , 0.2 ] );
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [ 0.0 , 0.0 , 0.0 ] );
+		glLightfv(GL_LIGHT0, GL_SPECULAR,[ 0.0 , 0.0 , 0.0 ] );
+		glLightfv(GL_LIGHT0, GL_POSITION, self.lpos );
+		glEnable(GL_LIGHT0); 
+
+	def _set_diffuse( self ) :
+		glEnable(GL_LIGHTING);
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [ 0.0 , 0.0 , 0.0 ] );
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [ 0.9 , 0.9 , 0.9 ] );
 		glLightfv(GL_LIGHT0, GL_SPECULAR,[ 0.3 , 0.3 , 0.3 ] );
 		glLightfv(GL_LIGHT0, GL_POSITION, self.lpos );

@@ -43,7 +43,7 @@ class Sparks :
 		self.real_size = csparks.update( self.poss , self.vels , self.cols , self.lifes , dt , self.real_size )
 
 	def spawn( self , pos , norm ) :
-		for i in range(200) :
+		for i in range(100) :
 			life = rnd.gauss(.1,.2)
 
 			if life < 0 : continue

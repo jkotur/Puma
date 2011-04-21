@@ -58,9 +58,9 @@ class Robot( Drawable ) :
 
 		self.sparks.draw()
 
-	def draw_volumes( self ) :
+	def draw_volumes( self , visible = False ) :
 		for i in range(1) :
-			self.meshes[i].draw_volume()
+			self.meshes[i].draw_volume(visible)
 
 	def update( self , dt ) :
 		self.sparks.update( dt )

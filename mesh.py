@@ -132,27 +132,30 @@ class Mesh( Drawable ) :
 
 #        self.vol = np.array( self.vol , np.float32 )
 
-	def draw_volume( self ) :
+	def draw_volume( self , visible = False ) :
 		if len(self.volume) == 0 : return
 
-#        glDisable( GL_CULL_FACE )
+		if visible :
+			glDisable( GL_CULL_FACE )
 
-#        glEnable( GL_BLEND )
-#        glBlendFunc( GL_ONE_MINUS_SRC_ALPHA , GL_ONE )
+			glEnable( GL_BLEND )
+			glBlendFunc( GL_ONE_MINUS_SRC_ALPHA , GL_ONE )
+
+			glColor4f( .1 , .5 , .8 , .3 )
 
 		glEnableClientState(GL_VERTEX_ARRAY)
 
 		glVertexPointer( 3 , GL_FLOAT , 0 , self.volume )
 
-#        glColor4f( .1 , .5 , .8 , .3 )
 
 		glDrawArrays( GL_TRIANGLES , 0 , self.volume_size/3 )
 
 		glDisableClientState(GL_VERTEX_ARRAY)
-#        
-#        glDisable( GL_BLEND )
 
-#        glEnable( GL_CULL_FACE )
+		if visible :
+			glDisable( GL_BLEND )
+
+			glEnable( GL_CULL_FACE )
 
 	def fromFile( self , path ) :
 		f = open(path,'r')

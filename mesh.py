@@ -9,6 +9,14 @@ from drawable import Drawable
 
 from copy import copy
 
+def index(seq, key = None , func = None ):
+	if key != None :
+		return next((i for i in xrange(len(seq)) if key == seq[i]), -1)
+	elif func != None :
+		return next((i for i in xrange(len(seq)) if f(seq[i])), -1)
+	else :
+		raise ValueError('You have to specify key or func argument')
+
 class Mesh( Drawable ) :
 	def __init__( self , f = None ) :
 		Drawable.__init__( self )
@@ -129,7 +137,7 @@ class Mesh( Drawable ) :
 
 		try :
 			self.verts      = self._readVertices ( f )
-			self.v , self.n = self._readPoints   ( f , self.verts )
+			self.v , self.n , self.vidx = self._readPoints   ( f , self.verts )
 			self.t          = self._readTriangels( f )
 			self.ev,self.et = self._readEdges    ( f )
 		except IOError as (errno, strerror):
@@ -143,11 +151,55 @@ class Mesh( Drawable ) :
 		self.t     = np.array( self.t     , np.uint32  )
 		self.ev    = np.array( self.ev    , np.uint32  )
 		self.et    = np.array( self.et    , np.uint32  )
+
 		self.tn    = self.calculate_triangles_normals( self.n , self.t )
 		self.an    = self.normals_to_arrays( self.n )
+		self.adj   = self.create_adjacency( self.et , self.t , self.vidx )
+
+		self.adj   = np.array( self.adj   , np.uint32  )
 
 		self.volume.resize( len(self.t)*3*2 )
 		self.normal.resize( len(self.t)*3*2 )
+
+	def create_adjacency( self , et , t , v ) :
+		adj = []
+
+		nebscount = 0
+
+		for ti in range(0,len(t),3) :
+			cur = [ v[t[ti]] , -1 , v[t[ti+1]] , -1 , v[t[ti+2]] , -1 ]
+			ti /= 3
+			for i in range(len(et)) :
+#                print ti , et[max(0,i-8):min(len(et),i+8)]
+				if et[i] == ti :
+					j = i+1 if i%2==0 else i-1
+					neb = [ v[vi] for vi in t[et[j]*3:et[j]*3+3] ]
+
+#                    print ti , et[j] , i , j , cur , neb , [ v[vi] for vi in t[et[(i-1)]*3:et[(i-1)]*3+3] ] , [ v[vi] for vi in t[et[i+1]*3:et[i+1]*3+3] ]
+
+					idx = [ index( cur , key = neb[i] ) for i in range(3) ]
+
+					l = 0
+					if 0 in idx and 2 in idx :
+						l = 1
+					elif 2 in idx and 4 in idx :
+						l = 3
+					elif 4 in idx and 0 in idx :
+						l = 5
+					else :
+						raise ValueError('Neighbour triangle is invalid: ' + str(cur) + str(neb) + str(idx) )
+
+#                    print cur , neb , idx , l , index( idx , key = -1 )
+
+					cur[l] = neb[ index( idx , key = -1 ) ]
+
+					nebscount += 1
+					if nebscount == 3 :
+						nebscount = 0
+						break
+			adj += cur
+		
+		return adj
 
 	def calculate_triangles_normals( self , ns , ts ) :
 		tn = []
@@ -174,12 +226,14 @@ class Mesh( Drawable ) :
 
 	def _readPoints( self , f , verts ) :
 		v , n = [] , []
+		vi = []
 		for i in xrange(int(f.readline())) :
 			l = f.readline().split(' ')
+			vi.append( int(l[0]) )
 			ind = int(l[0])*3
 			v += verts[ind:ind+3]
 			n += l[1:]
-		return v , n
+		return v , n , vi
 
 	def _readTriangels( self , f ) :
 		t = []

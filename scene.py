@@ -27,7 +27,7 @@ class Scene :
 		self.far = far
 		self.ratio = ratio
 
-		self.camera = Camera( ( 0 , 1 , -5 ) , ( 0 , 0 , 0 ) , ( 0 , 1 , 0 ) )
+		self.camera = None
 		self.plane  = Plane( (2,2) )
 
 		self.robot = Robot( robot_files )
@@ -52,6 +52,8 @@ class Scene :
 		self.im[3] = [ 0 , 0 , 0 , 1 ]
 
 	def gfx_init( self ) :
+		self.camera = Camera( ( 0 , 1 , -5 ) , ( 0 , 0 , 0 ) , ( 0 , 1 , 0 ) )
+
 		self._update_proj()
 
 		glEnable( GL_DEPTH_TEST )
@@ -60,9 +62,8 @@ class Scene :
 		glEnable( GL_COLOR_MATERIAL )
 		glColorMaterial( GL_FRONT , GL_AMBIENT_AND_DIFFUSE )
 
+		self.robot.gfx_init()
 		self.robot.create_volumes( self.lpos )
-
-		self.draw()
 
 	def draw( self ) :
 		self.time = timer()
@@ -74,10 +75,10 @@ class Scene :
 
 		self.camera.look()
 
-#        self.lpos = [ m.sin(self.x)*2 , 1 , m.cos(self.x)*2 ]
+		self.lpos = [ m.sin(self.x)*2 , 1 , m.cos(self.x)*2 ]
 
 		self._set_lights()
-#        self.robot.create_volumes( self.lpos )
+		self.robot.create_volumes( self.lpos )
 
 		self._draw_scene()
 
@@ -205,6 +206,8 @@ class Scene :
 		glDisable(GL_BLEND)
 
 		glPopAttrib()
+
+		self.robot.draw_volumes( True )
 
 #        glEnable(GL_CULL_FACE)
 #        glDepthMask(0)

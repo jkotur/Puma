@@ -51,14 +51,18 @@ class App(object):
 		win_main.connect('key-press-event'  , self._on_key_pressed  )
 		win_main.connect('key-release-event', self._on_key_released )
 
+		self.scene = Scene( self.fov , 1 , self.near , self.far , meshes )
+		self.drawing_area.add( self.scene )
+
+		print 'Scene added'
+
 		win_main.show_all()
 
 		width = self.drawing_area.allocation.width
 		height = self.drawing_area.allocation.height
 		ratio = float(width)/float(height)
 
-		self.scene = Scene( self.fov , ratio , self.near , self.far , meshes )
-		self.drawing_area.add( self.scene )
+		self.scene.set_ratio( ratio )
 
 		builder.connect_signals(self)
 

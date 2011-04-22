@@ -7,6 +7,8 @@ from OpenGL.GLU import *
 
 from drawable import Drawable
 
+import shaders as sh
+
 from copy import copy
 
 def index(seq, key = None , func = None ):
@@ -27,6 +29,9 @@ class Mesh( Drawable ) :
 		self.volume = np.zeros( 0 , np.float32 )
 		self.normal = np.zeros( 0 , np.float32 )
 
+		self.lpos = [0]*3
+		self.prog = None
+
 		if file : self.fromFile( f )
 
 	def draw( self ) :
@@ -34,18 +39,28 @@ class Mesh( Drawable ) :
 
 		glEnableClientState(GL_VERTEX_ARRAY)
 		glEnableClientState(GL_NORMAL_ARRAY)
+		glEnableClientState(GL_COLOR_ARRAY)
 
 		glVertexPointer( 3 , GL_FLOAT , 0 , self.v )
 		glNormalPointer(     GL_FLOAT , 0 , self.n )
+		glColorPointer ( 3 , GL_FLOAT , 0 , self.n )
 
 		glDrawElements( GL_TRIANGLES , len(self.t) , GL_UNSIGNED_INT , self.t )
 
 		glDisableClientState(GL_VERTEX_ARRAY)
 		glDisableClientState(GL_NORMAL_ARRAY)
+		glDisableClientState(GL_COLOR_ARRAY)
 
 #        glEnable( GL_CULL_FACE )
 
+	def gfx_init( self ) :
+		self.init_volumes_shader()
+
 	def create_volume( self , p ) :
+
+		self.lpos = p 
+
+		return
 
 		j = 0
 
@@ -104,8 +119,56 @@ class Mesh( Drawable ) :
 
 		self.volume_size = j
 #        
-
 	def draw_volume( self , visible = False ) :
+#        self.draw_volume_static( visible )
+		self.draw_volume_dynamic( self.lpos , visible )
+
+	def init_volumes_shader( self ) :
+		print 'Loading shaders'
+
+		try :
+			self.prog = sh.compile_program("volume")
+
+			self.loc_mmv = sh.get_loc(self.prog,'modelview' )
+			self.loc_mp  = sh.get_loc(self.prog,'projection')
+			self.loc_lpos= sh.get_loc(self.prog,'lpos')
+		except ValueError as ve :
+			print "Shader compilation failed: " + str(ve)
+			sys.exit(0)
+
+		self.adj   = self.create_adjacency( self.et , self.t , self.vidx )
+		self.adj   = np.array( self.adj   , np.uint32  )
+
+	def draw_volume_dynamic( self , lpos , visible = False ) :
+		assert(self.prog)
+
+		glDisable(GL_CULL_FACE)
+
+		glUseProgram( self.prog )
+  
+		mmv = glGetFloatv(GL_MODELVIEW_MATRIX)
+		mp  = glGetFloatv(GL_PROJECTION_MATRIX)
+  
+		glUniformMatrix4fv(self.loc_mmv,1,GL_FALSE,mmv)
+		glUniformMatrix4fv(self.loc_mp ,1,GL_FALSE,mp )
+
+		glUniform3f( self.loc_lpos , *lpos )
+
+		glEnableClientState(GL_NORMAL_ARRAY)
+
+		glVertexPointer( 3 , GL_FLOAT , 0 , self.v )
+		glNormalPointer(     GL_FLOAT , 0 , self.n )
+
+		glDrawElements( GL_TRIANGLES_ADJACENCY , len(self.adj) , GL_UNSIGNED_INT , self.adj )
+
+		glDisableClientState(GL_VERTEX_ARRAY)
+		glDisableClientState(GL_NORMAL_ARRAY)
+
+		glEnable(GL_CULL_FACE)
+
+		glUseProgram( 0 )
+
+	def draw_volume_static( self , visible = False ) :
 		if len(self.volume) == 0 : return
 
 		if visible :
@@ -152,11 +215,8 @@ class Mesh( Drawable ) :
 		self.ev    = np.array( self.ev    , np.uint32  )
 		self.et    = np.array( self.et    , np.uint32  )
 
-		self.tn    = self.calculate_triangles_normals( self.n , self.t )
-		self.an    = self.normals_to_arrays( self.n )
-		self.adj   = self.create_adjacency( self.et , self.t , self.vidx )
-
-		self.adj   = np.array( self.adj   , np.uint32  )
+#        self.tn    = self.calculate_triangles_normals( self.n , self.t )
+#        self.an    = self.normals_to_arrays( self.n )
 
 		self.volume.resize( len(self.t)*3*2 )
 		self.normal.resize( len(self.t)*3*2 )
@@ -168,12 +228,14 @@ class Mesh( Drawable ) :
 
 		for ti in range(0,len(t),3) :
 			cur = [ v[t[ti]] , -1 , v[t[ti+1]] , -1 , v[t[ti+2]] , -1 ]
+			curv= [   t[ti]  , -1 ,   t[ti+1]  , -1 ,   t[ti+2]  , -1 ]
 			ti /= 3
 			for i in range(len(et)) :
 #                print ti , et[max(0,i-8):min(len(et),i+8)]
 				if et[i] == ti :
 					j = i+1 if i%2==0 else i-1
 					neb = [ v[vi] for vi in t[et[j]*3:et[j]*3+3] ]
+					nebv=                   t[et[j]*3:et[j]*3+3]
 
 #                    print ti , et[j] , i , j , cur , neb , [ v[vi] for vi in t[et[(i-1)]*3:et[(i-1)]*3+3] ] , [ v[vi] for vi in t[et[i+1]*3:et[i+1]*3+3] ]
 
@@ -191,13 +253,14 @@ class Mesh( Drawable ) :
 
 #                    print cur , neb , idx , l , index( idx , key = -1 )
 
-					cur[l] = neb[ index( idx , key = -1 ) ]
+					cur [l] = neb [ index( idx , key = -1 ) ]
+					curv[l] = nebv[ index( idx , key = -1 ) ]
 
 					nebscount += 1
 					if nebscount == 3 :
 						nebscount = 0
 						break
-			adj += cur
+			adj += curv
 		
 		return adj
 

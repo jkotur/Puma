@@ -47,7 +47,13 @@ class Robot( Drawable ) :
 		for i in range(6) :
 			self.meshes[i].create_volume(p)
 
+	def gfx_init( self ) :
+		for i in range(6) :
+			self.meshes[i].gfx_init()
+
 	def draw( self ) :
+		self.sparks.draw()
+		return
 		glMatrixMode(GL_MODELVIEW)
 		glPushMatrix()
 		for i in range(6) :
@@ -55,8 +61,6 @@ class Robot( Drawable ) :
 			glMultTransposeMatrixf( self.ms[i] )
 			self.meshes[i].draw()
 		glPopMatrix()
-
-		self.sparks.draw()
 
 	def draw_volumes( self , visible = False ) :
 		for i in range(1) :

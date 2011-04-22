@@ -34,9 +34,14 @@ class GLDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
 		gldrawable = self.get_gl_drawable()
 		glcontext = self.get_gl_context()
 
+		print 'Realize!'
+
 		# OpenGL begin.
 		if not gldrawable.gl_begin(glcontext):
 			return
+
+		for p in self.todraw :
+			p.gfx_init()
 
 		# OpenGL end
 		gldrawable.gl_end()
@@ -50,6 +55,8 @@ class GLDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
 		self.width = self.allocation.width
 		self.height = self.allocation.height
 
+		print 'Configure!'
+
 		# OpenGL begin
 		if not gldrawable.gl_begin(glcontext):
 			return False
@@ -60,9 +67,6 @@ class GLDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
 		glLoadIdentity()
 		glOrtho( -5 , 5 , -5 , 5 , -1 , 100 )
 		glMatrixMode(GL_MODELVIEW)
-
-		for p in self.todraw :
-			p.gfx_init()
 
 		# OpenGL end
 		gldrawable.gl_end()

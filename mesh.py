@@ -39,17 +39,14 @@ class Mesh( Drawable ) :
 
 		glEnableClientState(GL_VERTEX_ARRAY)
 		glEnableClientState(GL_NORMAL_ARRAY)
-		glEnableClientState(GL_COLOR_ARRAY)
 
 		glVertexPointer( 3 , GL_FLOAT , 0 , self.v )
 		glNormalPointer(     GL_FLOAT , 0 , self.n )
-		glColorPointer ( 3 , GL_FLOAT , 0 , self.n )
 
 		glDrawElements( GL_TRIANGLES , len(self.t) , GL_UNSIGNED_INT , self.t )
 
 		glDisableClientState(GL_VERTEX_ARRAY)
 		glDisableClientState(GL_NORMAL_ARRAY)
-		glDisableClientState(GL_COLOR_ARRAY)
 
 #        glEnable( GL_CULL_FACE )
 
@@ -136,6 +133,7 @@ class Mesh( Drawable ) :
 			print "Shader compilation failed: " + str(ve)
 			sys.exit(0)
 
+		print 'Create adjacency data'
 		self.adj   = self.create_adjacency( self.et , self.t , self.vidx )
 		self.adj   = np.array( self.adj   , np.uint32  )
 
@@ -148,12 +146,13 @@ class Mesh( Drawable ) :
   
 		mmv = glGetFloatv(GL_MODELVIEW_MATRIX)
 		mp  = glGetFloatv(GL_PROJECTION_MATRIX)
-  
+
 		glUniformMatrix4fv(self.loc_mmv,1,GL_FALSE,mmv)
 		glUniformMatrix4fv(self.loc_mp ,1,GL_FALSE,mp )
 
 		glUniform3f( self.loc_lpos , *lpos )
 
+		glEnableClientState(GL_VERTEX_ARRAY)
 		glEnableClientState(GL_NORMAL_ARRAY)
 
 		glVertexPointer( 3 , GL_FLOAT , 0 , self.v )

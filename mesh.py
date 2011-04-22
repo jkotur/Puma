@@ -17,11 +17,12 @@ class Mesh( Drawable ) :
 
 		self.volume_size = 0
 		self.volume = np.zeros( 0 , np.float32 )
+		self.normal = np.zeros( 0 , np.float32 )
 
 		if file : self.fromFile( f )
 
 	def draw( self ) :
-		glDisable( GL_CULL_FACE )
+#        glDisable( GL_CULL_FACE )
 
 		glEnableClientState(GL_VERTEX_ARRAY)
 		glEnableClientState(GL_NORMAL_ARRAY)
@@ -34,7 +35,7 @@ class Mesh( Drawable ) :
 		glDisableClientState(GL_VERTEX_ARRAY)
 		glDisableClientState(GL_NORMAL_ARRAY)
 
-		glEnable( GL_CULL_FACE )
+#        glEnable( GL_CULL_FACE )
 
 	def create_volume( self , p ) :
 
@@ -49,113 +50,79 @@ class Mesh( Drawable ) :
 
 			dp = p - (v1+v2)/2.0
 
-			tid1 = self.et[i  ]*3
-			tid2 = self.et[i+1]*3
+			tid1 = self.et[i  ]
+			tid2 = self.et[i+1]
 
-			pos = neg = 0
+			d1 = np.dot( self.tn[tid1] , dp )
+			d2 = np.dot( self.tn[tid2] , dp )
 
-			first = second = False
-
-			for k in self.t[tid1:tid1+3] :
-				if neg != 0 and pos != 0 : break
-
-				d = np.dot( self.an[k] , dp )
-
-				if d <  0 : neg += 1
-				else :      pos += 1
-
-			if pos == 3 : first = True
-
-			pos = neg = 0
-
-			for k in self.t[tid2:tid2+3] :
-				if neg != 0 and pos != 0 : break
-
-				d = np.dot( self.an[k] , dp )
-
-				if d <  0 : neg += 1
-				else :      pos += 1
-
-			if pos == 3 : second = True
-
-			if first ^ second :
+			if d1 * d2 < 0 : 
 				w1 = v1 + (v1-p)*2
 				w2 = v2 + (v2-p)*2
 
-				self.volume[j   :j+ 3] = v1
-				self.volume[j+ 3:j+ 6] = v2
-				self.volume[j+ 6:j+ 9] = w1
+				if d1 < 0 : 
+					self.volume[j   :j+ 3] = v1
+					self.volume[j+ 3:j+ 6] = v2
+					self.volume[j+ 6:j+ 9] = w2
 
-				self.volume[j+ 9:j+12] = w2
-				self.volume[j+12:j+15] = w1
-				self.volume[j+15:j+18] = v2
+					self.volume[j+ 9:j+12] = w2
+					self.volume[j+12:j+15] = w1
+					self.volume[j+15:j+18] = v1
+				else :
+					self.volume[j   :j+ 3] = w2
+					self.volume[j+ 3:j+ 6] = v2
+					self.volume[j+ 6:j+ 9] = v1
+
+					self.volume[j+ 9:j+12] = v1
+					self.volume[j+12:j+15] = w1
+					self.volume[j+15:j+18] = w2
+
+#        for i in range(0,t,3) :
+#            self.
+
+#                if d1 > 0 :
+#                    normal = self.tn[tid1]
+#                else :
+#                    normal = self.tn[tid2]
+
+#                self.normal[j   :j+ 3] = normal
+#                self.normal[j+ 3:j+ 6] = normal
+#                self.normal[j+ 6:j+ 9] = normal
+#                self.volume[j+ 9:j+12] = normal
+#                self.volume[j+12:j+15] = normal
+#                self.volume[j+15:j+18] = normal
 
 				j += 18 
 
 		self.volume_size = j
 #        
-#        self.vol = []
-
-#        for i in range(0,len(self.t),3) :
-#            n = [ k for k in self.t[i:i+3] if np.dot( np.array(self.n[k*3:k*3+3]) , pos ) < 0 ]
-#            if len(n) == 0 :
-#                for k in self.t[i:i+3] :
-#                    self.vol += list(self.v[k*3:k*3+3])
-#            elif len(n) == 1 :
-#                m = [ k for k in self.t[i:i+3] if k != n[0] ]
-
-#                v0 = copy(self.v[m[0]*3:m[0]*3+3])
-#                w0 = v0 + (v0-pos)*2
-
-#                v1 = copy(self.v[m[1]*3:m[1]*3+3])
-#                w1 = v1 + (v1-pos)*2
-
-#                w2 = copy(self.v[n[0]*3:n[0]*3+3])
-#                w2+= (w2-pos)*2
-
-#                self.vol += list( v0 )
-#                self.vol += list( v1 )
-#                self.vol += list( w0 )
-#                self.vol += list( v1 )
-#                self.vol += list( w0 )
-#                self.vol += list( w1 )
-#                self.vol += list( w0 )
-#                self.vol += list( w1 )
-#                self.vol += list( w2 )
-#                
-#            else :
-#                for k in self.t[i:i+3] :
-#                    v = copy(self.v[k*3:k*3+3])
-#                    dv = v-pos
-#                    v += dv*2
-#                    self.vol += list(v)
-
-#        self.vol = np.array( self.vol , np.float32 )
 
 	def draw_volume( self , visible = False ) :
 		if len(self.volume) == 0 : return
 
 		if visible :
-			glDisable( GL_CULL_FACE )
+#            glDisable( GL_CULL_FACE )
 
 			glEnable( GL_BLEND )
 			glBlendFunc( GL_ONE_MINUS_SRC_ALPHA , GL_ONE )
 
-			glColor4f( .1 , .5 , .8 , .3 )
 
 		glEnableClientState(GL_VERTEX_ARRAY)
+#        glEnableClientState(GL_NORMAL_ARRAY)
 
 		glVertexPointer( 3 , GL_FLOAT , 0 , self.volume )
+#        glNormalPointer(     GL_FLOAT , 0 , self.normal )
 
 
 		glDrawArrays( GL_TRIANGLES , 0 , self.volume_size/3 )
 
 		glDisableClientState(GL_VERTEX_ARRAY)
+#        glDisableClientState(GL_NORMAL_ARRAY)
 
 		if visible :
 			glDisable( GL_BLEND )
 
-			glEnable( GL_CULL_FACE )
+#            glEnable( GL_CULL_FACE )
 
 	def fromFile( self , path ) :
 		f = open(path,'r')
@@ -180,6 +147,7 @@ class Mesh( Drawable ) :
 		self.an    = self.normals_to_arrays( self.n )
 
 		self.volume.resize( len(self.t)*3*2 )
+		self.normal.resize( len(self.t)*3*2 )
 
 	def calculate_triangles_normals( self , ns , ts ) :
 		tn = []

@@ -103,6 +103,7 @@ class Scene :
 		glStencilFunc(GL_ALWAYS, 1, 1)
 		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE)
 
+		glEnable(GL_CULL_FACE)
 		glColorMask(0,0,0,0);
 		glFrontFace(GL_CCW);
 		self.plane.draw( self.m )
@@ -137,8 +138,10 @@ class Scene :
 		glDisable( GL_BLEND )
 
 		# ambinet pass
+#        glColorMask(0,0,0,0)
 		self._set_ambient()
 		self.robot.draw()
+		glColorMask(1,1,1,1)
 
 		# lighting pass
 		glPushAttrib(GL_ALL_ATTRIB_BITS)
@@ -195,13 +198,23 @@ class Scene :
 
 		glBlendFunc(GL_ONE,GL_ONE)
 		glEnable(GL_BLEND)
+		glEnable(GL_CULL_FACE)
+		glCullFace(GL_BACK)
 		self._set_diffuse()
 		self.robot.draw()
 		glDisable(GL_BLEND)
 
 		glPopAttrib()
 
-		self.robot.draw_volumes( True )
+#        glEnable(GL_CULL_FACE)
+#        glDepthMask(0)
+#        glCullFace(GL_BACK)
+#        glColor4f( .1 , .5 , .8 , .3 )
+#        self.robot.draw_volumes( True )
+#        glCullFace(GL_FRONT)
+#        glColor4f( .8 , .4 , .1 , .3 )
+#        self.robot.draw_volumes( True )
+#        glDepthMask(1)
 
 	def _update_proj( self ) :
 		glMatrixMode(GL_PROJECTION)

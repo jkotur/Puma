@@ -29,6 +29,8 @@ class Mesh( Drawable ) :
 		self.volume = np.zeros( 0 , np.float32 )
 		self.normal = np.zeros( 0 , np.float32 )
 
+		self.pts_len = 0
+
 		self.lpos = [0]*3
 		self.prog = None
 
@@ -55,7 +57,8 @@ class Mesh( Drawable ) :
 
 	def create_volume( self , p ) :
 
-		self.lpos = p 
+		self.lpos = np.resize( p , 4 ); 
+		self.lpos[3] = 1;
 
 		return
 
@@ -116,9 +119,9 @@ class Mesh( Drawable ) :
 
 		self.volume_size = j
 #        
-	def draw_volume( self , visible = False ) :
+	def draw_volume( self , light_matrix , visible = False ) :
 #        self.draw_volume_static( visible )
-		self.draw_volume_dynamic( self.lpos , visible )
+		self.draw_volume_dynamic( np.dot(np.transpose(light_matrix),self.lpos) , visible )
 
 	def init_volumes_shader( self ) :
 		print 'Loading shaders'
@@ -134,13 +137,15 @@ class Mesh( Drawable ) :
 			sys.exit(0)
 
 		print 'Create adjacency data'
-		self.adj   = self.create_adjacency( self.et , self.t , self.vidx )
+		self.adj   = self.create_adjacency( self.et , self.t , self.vidx , self.pts_len )
 		self.adj   = np.array( self.adj   , np.uint32  )
 
 	def draw_volume_dynamic( self , lpos , visible = False ) :
 		assert(self.prog)
 
 		glDisable(GL_CULL_FACE)
+#        glEnable(GL_BLEND)
+		glBlendFunc( GL_ONE_MINUS_SRC_ALPHA , GL_ONE )
 
 		glUseProgram( self.prog )
   
@@ -150,7 +155,7 @@ class Mesh( Drawable ) :
 		glUniformMatrix4fv(self.loc_mmv,1,GL_FALSE,mmv)
 		glUniformMatrix4fv(self.loc_mp ,1,GL_FALSE,mp )
 
-		glUniform3f( self.loc_lpos , *lpos )
+		glUniform3f( self.loc_lpos , lpos[0] , lpos[1] , lpos[2] )
 
 		glEnableClientState(GL_VERTEX_ARRAY)
 		glEnableClientState(GL_NORMAL_ARRAY)
@@ -164,6 +169,7 @@ class Mesh( Drawable ) :
 		glDisableClientState(GL_NORMAL_ARRAY)
 
 		glEnable(GL_CULL_FACE)
+		glDisable(GL_BLEND)
 
 		glUseProgram( 0 )
 
@@ -207,6 +213,12 @@ class Mesh( Drawable ) :
 		except ValueError as e :
 			print "Could not convert data: " , e
 
+		self.pts_len = len(self.v)/3
+		assert( self.pts_len == len(self.n)/3 )
+
+		self.n += self.calculate_triangles_normals( self.n , self.t )
+		self.v += self.calculate_triangles_normals( self.v , self.t )
+
 		self.verts = np.array( self.verts , np.float32 )
 		self.v     = np.array( self.v     , np.float32 )
 		self.n     = np.array( self.n     , np.float32 )
@@ -214,20 +226,24 @@ class Mesh( Drawable ) :
 		self.ev    = np.array( self.ev    , np.uint32  )
 		self.et    = np.array( self.et    , np.uint32  )
 
-#        self.tn    = self.calculate_triangles_normals( self.n , self.t )
 #        self.an    = self.normals_to_arrays( self.n )
 
 		self.volume.resize( len(self.t)*3*2 )
 		self.normal.resize( len(self.t)*3*2 )
 
-	def create_adjacency( self , et , t , v ) :
+	def create_adjacency( self , et , t , v , nlen ) :
 		adj = []
 
-		nebscount = 0
+		nebscount = 3
 
 		for ti in range(0,len(t),3) :
+			if nebscount == 3 :
+				nebscount = 0
+			else : raise ValueError('more than 3 naighbours found')
+
 			cur = [ v[t[ti]] , -1 , v[t[ti+1]] , -1 , v[t[ti+2]] , -1 ]
 			curv= [   t[ti]  , -1 ,   t[ti+1]  , -1 ,   t[ti+2]  , -1 ]
+			curt= [   t[ti]  , -1 ,   t[ti+1]  , -1 ,   t[ti+2]  , -1 ]
 			ti /= 3
 			for i in range(len(et)) :
 #                print ti , et[max(0,i-8):min(len(et),i+8)]
@@ -254,12 +270,12 @@ class Mesh( Drawable ) :
 
 					cur [l] = neb [ index( idx , key = -1 ) ]
 					curv[l] = nebv[ index( idx , key = -1 ) ]
+					curt[l] = et[j]+nlen
 
 					nebscount += 1
-					if nebscount == 3 :
-						nebscount = 0
-						break
-			adj += curv
+#                    if nebscount == 3 :
+#                        break
+			adj += curt
 		
 		return adj
 
@@ -270,7 +286,7 @@ class Mesh( Drawable ) :
 			n = np.array((0,0,0),np.float32)
 			for k in ts[i:i+3] :
 				n += np.array( ns[k*3:k*3+3] , np.float32 )
-			tn.append( n/3.0 )
+			tn += list( n/3.0 )
 
 		return tn
 

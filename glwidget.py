@@ -1,3 +1,5 @@
+import sys
+
 import pygtk
 pygtk.require('2.0')
 import gtk
@@ -87,8 +89,12 @@ class GLDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 
-		for p in self.todraw :
-			p.draw()
+		try :
+			for p in self.todraw :
+				p.draw()
+		except OpenGL.error.Error as e :
+			print 'OpenGL error: ' + str(e)
+			sys.exit(0)
 
 		if gldrawable.is_double_buffered():
 			gldrawable.swap_buffers()

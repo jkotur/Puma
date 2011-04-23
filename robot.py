@@ -63,8 +63,12 @@ class Robot( Drawable ) :
 		glPopMatrix()
 
 	def draw_volumes( self , visible = False ) :
-		for i in range(1) :
-			self.meshes[i].draw_volume(visible)
+		ml = glGetFloatv(GL_MODELVIEW_MATRIX)
+		glPushMatrix()
+		for i in range(2) :
+			glMultTransposeMatrixf( self.ms[i] )
+			self.meshes[i].draw_volume(ml,visible)
+		glPopMatrix()
 
 	def update( self , dt ) :
 		self.sparks.update( dt )

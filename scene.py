@@ -75,7 +75,7 @@ class Scene :
 
 		self.camera.look()
 
-		self.lpos = [ m.sin(self.x)*2 , 1 , m.cos(self.x)*2 ]
+		self.lpos = [ m.sin(self.x/100)*2 , -1 , m.cos(self.x/100)*2 ]
 
 		self._set_lights()
 		self.robot.create_volumes( self.lpos )

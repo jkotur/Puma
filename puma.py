@@ -51,7 +51,7 @@ class App(object):
 		win_main.connect('key-press-event'  , self._on_key_pressed  )
 		win_main.connect('key-release-event', self._on_key_released )
 
-		self.scene = Scene( self.fov , 1 , self.near , self.far , meshes )
+		self.scene = Scene( self.fov , .01 , self.near , self.far , meshes )
 		self.drawing_area.add( self.scene )
 
 		print 'Scene added'

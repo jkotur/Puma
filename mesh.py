@@ -37,8 +37,6 @@ class Mesh( Drawable ) :
 		if file : self.fromFile( f )
 
 	def draw( self ) :
-#        glDisable( GL_CULL_FACE )
-
 		glEnableClientState(GL_VERTEX_ARRAY)
 		glEnableClientState(GL_NORMAL_ARRAY)
 
@@ -49,8 +47,6 @@ class Mesh( Drawable ) :
 
 		glDisableClientState(GL_VERTEX_ARRAY)
 		glDisableClientState(GL_NORMAL_ARRAY)
-
-#        glEnable( GL_CULL_FACE )
 
 	def gfx_init( self ) :
 		self.init_volumes_shader()
@@ -119,9 +115,19 @@ class Mesh( Drawable ) :
 
 		self.volume_size = j
 #        
-	def draw_volume( self , light_matrix , visible = False ) :
+	def draw_volume( self , light_matrix , culling = GL_NONE , visible = False ) :
 #        self.draw_volume_static( visible )
-		self.draw_volume_dynamic( np.dot(np.transpose(light_matrix),self.lpos) , visible )
+
+		if culling == GL_NONE :
+			culling = 0.0
+		elif culling == GL_BACK :
+			culling = 1.0
+		elif culling == GL_FRONT :
+			culling =-1.0
+		else :
+			raise ValueError('Uknown culling value')
+
+		self.draw_volume_dynamic( np.dot(np.transpose(light_matrix),self.lpos) , culling , visible )
 
 	def init_volumes_shader( self ) :
 		print 'Loading shaders'
@@ -131,7 +137,8 @@ class Mesh( Drawable ) :
 
 			self.loc_mmv = sh.get_loc(self.prog,'modelview' )
 			self.loc_mp  = sh.get_loc(self.prog,'projection')
-			self.loc_lpos= sh.get_loc(self.prog,'lpos')
+			self.loc_lpos= sh.get_loc(self.prog,'lpos'      )
+			self.loc_cull= sh.get_loc(self.prog,'culling'   )
 		except ValueError as ve :
 			print "Shader compilation failed: " + str(ve)
 			sys.exit(0)
@@ -140,12 +147,8 @@ class Mesh( Drawable ) :
 		self.adj   = self.create_adjacency( self.et , self.t , self.vidx , self.pts_len )
 		self.adj   = np.array( self.adj   , np.uint32  )
 
-	def draw_volume_dynamic( self , lpos , visible = False ) :
+	def draw_volume_dynamic( self , lpos , culling = 0.0 , visible = False ) :
 		assert(self.prog)
-
-		glDisable(GL_CULL_FACE)
-#        glEnable(GL_BLEND)
-		glBlendFunc( GL_ONE_MINUS_SRC_ALPHA , GL_ONE )
 
 		glUseProgram( self.prog )
   
@@ -157,6 +160,8 @@ class Mesh( Drawable ) :
 
 		glUniform3f( self.loc_lpos , lpos[0] , lpos[1] , lpos[2] )
 
+		glUniform1f( self.loc_cull , culling )
+
 		glEnableClientState(GL_VERTEX_ARRAY)
 		glEnableClientState(GL_NORMAL_ARRAY)
 
@@ -167,9 +172,6 @@ class Mesh( Drawable ) :
 
 		glDisableClientState(GL_VERTEX_ARRAY)
 		glDisableClientState(GL_NORMAL_ARRAY)
-
-		glEnable(GL_CULL_FACE)
-		glDisable(GL_BLEND)
 
 		glUseProgram( 0 )
 

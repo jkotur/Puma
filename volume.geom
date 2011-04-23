@@ -9,6 +9,8 @@ uniform mat4 projection;
 
 uniform vec3 lpos; // light position
 
+uniform float culling;
+
 in vec3 normals[];
 
 out vec3 color;
@@ -40,47 +42,69 @@ void main()
 
 	mat4 PMV = projection * modelview;
 
+	if( culling < 0 )
+		color = vec3(1,0,0);
+	else	color = vec3(0,1,0);
+
 	if( d0 > 0 ) {
-		color = nb;
-		gl_Position = projection * p0 ; EmitVertex();
-		gl_Position = projection * p1 ; EmitVertex();
-		gl_Position = projection * p2 ; EmitVertex();
-		EndPrimitive();
+		if( dot(nb,p0.xyz) * culling <= 0.0 ) {
+			//color = nb;
+			// prevent self shadownig
+			gl_Position = projection * p0 + vec4(0,0,.01,0) ; EmitVertex();
+			gl_Position = projection * p1 + vec4(0,0,.01,0) ; EmitVertex();
+			gl_Position = projection * p2 + vec4(0,0,.01,0) ; EmitVertex();
+			EndPrimitive();
+		}
 	} else {
-		color = nb;
-		gl_Position = projection * move( p0 , lpos ); EmitVertex();
-		gl_Position = projection * move( p1 , lpos ); EmitVertex();
-		gl_Position = projection * move( p2 , lpos ); EmitVertex();
-		EndPrimitive();
+		vec4 mp0 = move( p0 , lpos );
+		if( dot(nb,mp0.xyz) * culling <= 0 ) {
+			//color = nb;
+			gl_Position = projection *      mp0         ; EmitVertex();
+			gl_Position = projection * move( p1 , lpos ); EmitVertex();
+			gl_Position = projection * move( p2 , lpos ); EmitVertex();
+			EndPrimitive();
+		}
 
 		if( d1 > 0 ) {
-			color = n1;
-//			color = vec3(1,0,0);
-			gl_Position = projection *       p0         ; EmitVertex();
-			gl_Position = projection *       p1         ; EmitVertex();
-			gl_Position = projection * move( p0 , lpos ); EmitVertex();
-			gl_Position = projection * move( p1 , lpos ); EmitVertex();
-			EndPrimitive();
+			n1 = normalize( cross( dp1 , (p1.xyz-p2.xyz) ) );
+			if( dot(n1,nb) < 0 ) n1 = -n1;
+
+			if( dot(n1,p1.xyz) * culling <= 0 ) {
+				//color = n1;
+				gl_Position = projection *       p0         ; EmitVertex();
+				gl_Position = projection *       p1         ; EmitVertex();
+				gl_Position = projection * move( p0 , lpos ); EmitVertex();
+				gl_Position = projection * move( p1 , lpos ); EmitVertex();
+				EndPrimitive();
+			}
 		}
 
 		if( d2 > 0 ) {
-			color = n2;
-//			color = vec3(0,1,0);
-			gl_Position = projection *       p1         ; EmitVertex();
-			gl_Position = projection *       p2         ; EmitVertex();
-			gl_Position = projection * move( p1 , lpos ); EmitVertex();
-			gl_Position = projection * move( p2 , lpos ); EmitVertex();
-			EndPrimitive();
+			n2 = normalize( cross( dp2 , (p2.xyz-p1.xyz) ) );
+			if( dot(n2,nb) < 0 ) n2 = -n2;
+
+			if( dot(n2,p2.xyz) * culling <= 0 ) {
+				//color = n2;
+				gl_Position = projection *       p1         ; EmitVertex();
+				gl_Position = projection *       p2         ; EmitVertex();
+				gl_Position = projection * move( p1 , lpos ); EmitVertex();
+				gl_Position = projection * move( p2 , lpos ); EmitVertex();
+				EndPrimitive();
+			}
 		}
 
 		if( d3 > 0 ) {
-			color = n3;
-//			color = vec3(0,0,1);
-			gl_Position = projection *       p2         ; EmitVertex();
-			gl_Position = projection *       p0         ; EmitVertex();
-			gl_Position = projection * move( p2 , lpos ); EmitVertex();
-			gl_Position = projection * move( p0 , lpos ); EmitVertex();
-			EndPrimitive();
+			n3 = normalize( cross( dp3 , (p0.xyz-p2.xyz) ) );
+			if( dot(n3,nb) < 0 ) n3 = -n3;
+
+			if( dot(n3,p0.xyz) * culling <= 0 ) {
+				//color = n3;
+				gl_Position = projection *       p2         ; EmitVertex();
+				gl_Position = projection *       p0         ; EmitVertex();
+				gl_Position = projection * move( p2 , lpos ); EmitVertex();
+				gl_Position = projection * move( p0 , lpos ); EmitVertex();
+				EndPrimitive();
+			}
 		}
 	}
 }

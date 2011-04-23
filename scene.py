@@ -30,6 +30,10 @@ class Scene :
 		self.camera = None
 		self.plane  = Plane( (2,2) )
 
+		self.wall = Plane( (10,10) )
+		self.mw = tr.rotation_matrix( -m.pi / 2.0 , (1,0,0) )
+		self.mw = np.dot( self.mw , tr.translation_matrix( (0,3,0) ) )
+
 		self.robot = Robot( robot_files )
 
 		self.x = 0.0
@@ -77,7 +81,7 @@ class Scene :
 
 		self.lpos = [ m.sin(self.x/100)*2 , -1 , m.cos(self.x/100)*2 ]
 
-		self._set_lights()
+#        self._set_lights()
 		self.robot.create_volumes( self.lpos )
 
 		self._draw_scene()
@@ -142,6 +146,8 @@ class Scene :
 #        glColorMask(0,0,0,0)
 		self._set_ambient()
 		self.robot.draw()
+		glColor4f(.1,.1,.1,1)
+		self.wall.draw( self.mw )
 		glColorMask(1,1,1,1)
 
 		# lighting pass
@@ -150,7 +156,7 @@ class Scene :
 		glClear(GL_STENCIL_BUFFER_BIT)
 		glDepthMask(0);
 		glColorMask(0,0,0,0);
-		glEnable(GL_CULL_FACE);
+		glDisable(GL_CULL_FACE);
 		glEnable(GL_STENCIL_TEST);
 
 		glEnable(GL_LIGHTING)
@@ -163,7 +169,7 @@ class Scene :
                     GL_KEEP,   # depth test fail
                     GL_INCR);  # depth test pass
 
-		self.robot.draw_volumes()
+		self.robot.draw_volumes( cull = GL_BACK )
 
 		# Decrement for back faces
 		glCullFace(GL_FRONT);
@@ -171,7 +177,7 @@ class Scene :
 					GL_KEEP,   # depth test fail
 					GL_DECR);  # depth test pass
 
-		self.robot.draw_volumes()
+		self.robot.draw_volumes( cull = GL_FRONT )
 
 #        glClear(GL_STENCIL_BUFFER_BIT)
 #        glColorMask(0, 0, 0, 0);
@@ -195,29 +201,26 @@ class Scene :
 		glDepthFunc(GL_LEQUAL)
 		glColorMask(1, 1, 1, 1)
 		glDepthMask(1)
-		glCullFace(GL_BACK)
 
-		glBlendFunc(GL_ONE,GL_ONE)
-		glEnable(GL_BLEND)
 		glEnable(GL_CULL_FACE)
 		glCullFace(GL_BACK)
+
+		glEnable(GL_BLEND)
+		glBlendFunc(GL_ONE,GL_ONE)
+
 		self._set_diffuse()
+
 		self.robot.draw()
+
+		glColor4f(1,1,1,1)
+		self.wall.draw( self.mw )
+
 		glDisable(GL_BLEND)
 
 		glPopAttrib()
 
-		self.robot.draw_volumes( True )
-
-#        glEnable(GL_CULL_FACE)
-#        glDepthMask(0)
-#        glCullFace(GL_BACK)
-#        glColor4f( .1 , .5 , .8 , .3 )
-#        self.robot.draw_volumes( True )
-#        glCullFace(GL_FRONT)
-#        glColor4f( .8 , .4 , .1 , .3 )
-#        self.robot.draw_volumes( True )
-#        glDepthMask(1)
+#        self.robot.draw_volumes( cull = GL_FRONT )
+#        self.robot.draw_volumes( cull = GL_BACK  )
 
 	def _update_proj( self ) :
 		glMatrixMode(GL_PROJECTION)
@@ -235,7 +238,7 @@ class Scene :
 
 	def _set_ambient( self ) :
 		glEnable(GL_LIGHTING);
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [ 0.2 , 0.2 , 0.2 ] );
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [ 0.1 , 0.1 , 0.1 ] );
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [ 0.0 , 0.0 , 0.0 ] );
 		glLightfv(GL_LIGHT0, GL_SPECULAR,[ 0.0 , 0.0 , 0.0 ] );
 		glLightfv(GL_LIGHT0, GL_POSITION, self.lpos );
@@ -243,9 +246,12 @@ class Scene :
 
 	def _set_diffuse( self ) :
 		glEnable(GL_LIGHTING);
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [ 0.0 , 0.0 , 0.0 ] );
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [ 0.9 , 0.9 , 0.9 ] );
-		glLightfv(GL_LIGHT0, GL_SPECULAR,[ 0.3 , 0.3 , 0.3 ] );
+		glLightfv(GL_LIGHT0, GL_AMBIENT , [ 0.0 , 0.0 , 0.0 ] );
+		glLightfv(GL_LIGHT0, GL_DIFFUSE , [ 0.9 , 0.9 , 0.9 ] );
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [ 0.3 , 0.3 , 0.3 ] );
+#        glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 1.0)
+#        glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.2)
+#        glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.08)
 		glLightfv(GL_LIGHT0, GL_POSITION, self.lpos );
 		glEnable(GL_LIGHT0); 
 						 

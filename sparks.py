@@ -23,8 +23,9 @@ class Sparks :
 		self.lifes= np.zeros(self.size , np.double )
 
 	def draw( self ) :
+		glPushAttrib(GL_ALL_ATTRIB_BITS)
 		glEnable(GL_BLEND)
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE)
+		glBlendFunc(GL_ONE,GL_SRC_ALPHA)
 
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glEnableClientState(GL_COLOR_ARRAY);
@@ -38,6 +39,7 @@ class Sparks :
 		glDisableClientState(GL_COLOR_ARRAY);
 
 		glDisable(GL_BLEND)
+		glPopAttrib()
 
 	def update( self , dt ) :
 		self.real_size = csparks.update( self.poss , self.vels , self.cols , self.lifes , dt , self.real_size )

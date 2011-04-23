@@ -66,7 +66,7 @@ class App(object):
 
 		builder.connect_signals(self)
 
-#        self.statbar = builder.get_object('statbar')
+		self.statbar = builder.get_object('statbar')
 
 		self.drawing_area.connect('motion_notify_event',self._on_mouse_motion)
 		self.drawing_area.connect('button_press_event',self._on_button_pressed)
@@ -109,8 +109,6 @@ class App(object):
 #        gtk.gdk.Keymap
 
 	def _on_key_pressed( self , widget , data=None ) :
-		print gtk.gdkgl.query_gl_extension('GL_EXT_stencil_wrap')
-		print gtk.gdkgl.query_gl_extension('GL_EXT_stencil_two_side')
 		if not any(self.move) :
 			gtk.timeout_add( 20 , self._move_callback )
 
@@ -136,6 +134,18 @@ class App(object):
 		self.scene.key_pressed( self.move )
 		self.drawing_area.queue_draw()
 		return any(self.move)
+
+	def on_cbut_robot_toggled( self , widget , data=None ) :
+		self.scene.draw_robot = not self.scene.draw_robot
+
+	def on_cbut_sparks_toggled( self , widget , data=None ) :
+		self.scene.draw_sparks = not self.scene.draw_sparks
+
+	def on_cbut_volume_back_toggled( self , widget , data=None ) :
+		self.scene.draw_back = not self.scene.draw_back
+
+	def on_cbut_volume_front_toggled( self , widget , data=None ) :
+		self.scene.draw_front = not self.scene.draw_front
 
 	def init_glext(self):
 		# Query the OpenGL extension version.

@@ -30,7 +30,7 @@ class Scene :
 		self.camera = None
 		self.plane  = Plane( (2,2) )
 
-		self.wall = Plane( (10,10) )
+		self.wall = Plane( (20,10) )
 		self.mw = tr.rotation_matrix( -m.pi / 2.0 , (1,0,0) )
 		self.mw = np.dot( self.mw , tr.translation_matrix( (0,3,0) ) )
 
@@ -46,6 +46,11 @@ class Scene :
 
 		self._make_plane_matrix()
 
+		self.draw_robot = True
+		self.draw_sparks = True 
+		self.draw_front = False
+		self.draw_back = False
+
 	def _make_plane_matrix( self ) :
 		r = tr.rotation_matrix( self.plane_alpha , (0,0,1) )
 		s = tr.scale_matrix( 1 )
@@ -56,7 +61,7 @@ class Scene :
 		self.im[3] = [ 0 , 0 , 0 , 1 ]
 
 	def gfx_init( self ) :
-		self.camera = Camera( ( 0 , 1 , -5 ) , ( 0 , 0 , 0 ) , ( 0 , 1 , 0 ) )
+		self.camera = Camera( ( 2 , 1 ,  5 ) , ( 0 , 0 , 0 ) , ( 0 , 1 , 0 ) )
 
 		self._update_proj()
 
@@ -79,7 +84,7 @@ class Scene :
 
 		self.camera.look()
 
-		self.lpos = [ m.sin(self.x/100)*2 , -1 , m.cos(self.x/100)*2 ]
+		self.lpos = [ m.sin(1/10.0)*.5 , m.cos(1/10.0)*.5 , 2 ]
 
 #        self._set_lights()
 		self.robot.create_volumes( self.lpos )
@@ -88,7 +93,7 @@ class Scene :
 
 		self.robot.update( dt )
 
-		print dt
+#        print dt
 
 		self.x+=dt*.3
 
@@ -125,7 +130,7 @@ class Scene :
 		glMultTransposeMatrixf( self.im )
 
 		glFrontFace(GL_CW);
-		self.robot.draw()
+		if self.draw_robot : self.robot.draw( self.draw_sparks )
 
 		glPopMatrix();
 		glFrontFace(GL_CCW);
@@ -145,7 +150,7 @@ class Scene :
 		# ambinet pass
 #        glColorMask(0,0,0,0)
 		self._set_ambient()
-		self.robot.draw()
+		if self.draw_robot : self.robot.draw( self.draw_sparks )
 		glColor4f(.1,.1,.1,1)
 		self.wall.draw( self.mw )
 		glColorMask(1,1,1,1)
@@ -156,7 +161,7 @@ class Scene :
 		glClear(GL_STENCIL_BUFFER_BIT)
 		glDepthMask(0);
 		glColorMask(0,0,0,0);
-		glDisable(GL_CULL_FACE);
+		glEnable(GL_CULL_FACE);
 		glEnable(GL_STENCIL_TEST);
 
 		glEnable(GL_LIGHTING)
@@ -210,7 +215,7 @@ class Scene :
 
 		self._set_diffuse()
 
-		self.robot.draw()
+		if self.draw_robot : self.robot.draw( self.draw_sparks )
 
 		glColor4f(1,1,1,1)
 		self.wall.draw( self.mw )
@@ -219,8 +224,8 @@ class Scene :
 
 		glPopAttrib()
 
-#        self.robot.draw_volumes( cull = GL_FRONT )
-#        self.robot.draw_volumes( cull = GL_BACK  )
+		if self.draw_back  : self.robot.draw_volumes( cull = GL_FRONT )
+		if self.draw_front : self.robot.draw_volumes( cull = GL_BACK  )
 
 	def _update_proj( self ) :
 		glMatrixMode(GL_PROJECTION)

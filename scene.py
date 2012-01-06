@@ -169,6 +169,7 @@ class Scene :
 			self.ctl.move( np.dot( mv , np.linalg.inv(self.camera.m) ) )
 		if 2 in buts and buts[2] :
 			self.ctl.rotate( -df[0]*0.01 , np.dot( np.array((0,0,1,0)) , np.linalg.inv(self.camera.m) ) )
+			self.ctl.rotate( -df[1]*0.01 , np.dot( np.array((0,1,0,0)) , np.linalg.inv(self.camera.m) ) )
 		elif 3 in buts and buts[3] :
 			self.camera.rot( *map( lambda x : -x*.2 , df ) )
 

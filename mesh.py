@@ -49,7 +49,8 @@ class Mesh( Drawable ) :
 		glDisableClientState(GL_NORMAL_ARRAY)
 
 	def gfx_init( self ) :
-		self.init_volumes_shader()
+		pass
+#        self.init_volumes_shader()
 
 	def create_volume( self , p ) :
 

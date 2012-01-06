@@ -19,6 +19,7 @@ else:
 from camera import Camera
 from robot import Robot
 from plane import Plane
+from controler import Controler
 
 class Scene :
 	def __init__( self , fovy , ratio , near , far , robot_files ) :
@@ -35,6 +36,7 @@ class Scene :
 		self.mw = np.dot( self.mw , tr.translation_matrix( (0,3,0) ) )
 
 		self.robot = Robot( robot_files )
+		self.ctl   = Controler()
 
 		self.x = 0.0
 
@@ -72,7 +74,6 @@ class Scene :
 		glColorMaterial( GL_FRONT , GL_AMBIENT_AND_DIFFUSE )
 
 		self.robot.gfx_init()
-		self.robot.create_volumes( self.lpos )
 
 	def draw( self ) :
 		self.time = timer()
@@ -86,146 +87,33 @@ class Scene :
 
 		self.lpos = [ m.sin(1/10.0)*.5 , m.cos(1/10.0)*.5 , 2 ]
 
-#        self._set_lights()
-		self.robot.create_volumes( self.lpos )
-
+		self._update_scene( dt )
 		self._draw_scene()
-
-		self.robot.update( dt )
-
-#        print dt
 
 		self.x+=dt*.3
 
 		self.last_time = self.time
 
-	def _draw_scene( self ) :
-		pos = np.dot( self.m , np.array( [ m.sin(self.x*7)*m.cos(self.x/3.0) , 0 , m.cos(self.x*5) , 1 ] ) )
-		nrm = np.dot( self.m , np.array( [      0        ,-1 ,      0        , 0 ] ) )
+	def _update_scene( self , dt ) :
+		self.robot.update( dt )
+
+		pos = self.ctl.pos
+		nrm = self.ctl.dir
 
 		self.robot.resolve( pos , nrm )
 
+
+	def _draw_scene( self ) :
 		glClearStencil(0);
 		glClear(GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
-		glDisable(GL_DEPTH_TEST)
-		glEnable(GL_STENCIL_TEST)
-		glStencilFunc(GL_ALWAYS, 1, 1)
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE)
+		self.ctl.draw()
 
-		glEnable(GL_CULL_FACE)
-		glColorMask(0,0,0,0);
-		glFrontFace(GL_CCW);
-		self.plane.draw( self.m )
-
-		glEnable(GL_DEPTH_TEST)
-
-		glColorMask(1,1,1,1);
-		glStencilFunc(GL_EQUAL, 1, 1);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-
-		glPushMatrix()
-		glMultTransposeMatrixf( self.m )
-		glScalef(1,-1,1)
-		glMultTransposeMatrixf( self.im )
-
-		glFrontFace(GL_CW);
-		if self.draw_robot : self.robot.draw( self.draw_sparks )
-
-		glPopMatrix();
-		glFrontFace(GL_CCW);
-
-		glDisable(GL_STENCIL_TEST)
-
-		glEnable( GL_BLEND )
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
-		glColor4f(.7,.7,.7,.85)
-
-		glDisable( GL_CULL_FACE )
-		self.plane.draw( self.m )
-
-		glDisable( GL_BLEND )
-
-		# ambinet pass
-#        glColorMask(0,0,0,0)
 		self._set_ambient()
-		if self.draw_robot : self.robot.draw( self.draw_sparks )
-		glColor4f(.1,.1,.1,1)
-		self.wall.draw( self.mw )
-		glColorMask(1,1,1,1)
-
-		# lighting pass
-		glPushAttrib(GL_ALL_ATTRIB_BITS)
-
-		glClear(GL_STENCIL_BUFFER_BIT)
-		glDepthMask(0);
-		glColorMask(0,0,0,0);
-		glEnable(GL_CULL_FACE);
-		glEnable(GL_STENCIL_TEST);
-
-		glEnable(GL_LIGHTING)
-		glStencilMask(~0);
-		glStencilFunc(GL_ALWAYS, 0, ~0);
-
-		# Increment for front faces
-		glCullFace(GL_BACK)
-		glStencilOp(GL_KEEP,   # stencil test fail
-                    GL_KEEP,   # depth test fail
-                    GL_INCR);  # depth test pass
-
-		self.robot.draw_volumes( cull = GL_BACK )
-
-		# Decrement for back faces
-		glCullFace(GL_FRONT);
-		glStencilOp(GL_KEEP,   # stencil test fail
-					GL_KEEP,   # depth test fail
-					GL_DECR);  # depth test pass
-
-		self.robot.draw_volumes( cull = GL_FRONT )
-
-#        glClear(GL_STENCIL_BUFFER_BIT)
-#        glColorMask(0, 0, 0, 0);
-#        glDisable(GL_LIGHTING)
-#        glStencilFunc(GL_ALWAYS, 0, ~0);
-#        glStencilMask(~0);
-
-#        glActiveStencilFaceEXT(GL_FRONT)
-#        glStencilOp(GL_KEEP, GL_DECR_WRAP_EXT, GL_KEEP)
-#        glActiveStencilFaceEXT(GL_BACK)
-#        glStencilOp(GL_KEEP, GL_INCR_WRAP_EXT, GL_KEEP)
-#        glCullFace(GL_NONE)
-
-#        glEnable(GL_LIGHTING)
-		glStencilFunc(GL_EQUAL, 0, ~0)
-#        glActiveStencilFaceEXT(GL_FRONT)
-#        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP)
-#        glActiveStencilFaceEXT(GL_BACK)
-
-		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP)
-		glDepthFunc(GL_LEQUAL)
-		glColorMask(1, 1, 1, 1)
-		glDepthMask(1)
-
-		glEnable(GL_CULL_FACE)
-		glCullFace(GL_BACK)
-
-		glEnable(GL_BLEND)
-		glBlendFunc(GL_ONE,GL_ONE)
-
 		self._set_diffuse()
 
 		if self.draw_robot : self.robot.draw( self.draw_sparks )
 
-		glColor4f(1,1,1,1)
-		self.wall.draw( self.mw )
-
-		glDisable(GL_BLEND)
-
-		glPopAttrib()
-
-		if self.draw_back  : self.robot.draw_volumes( cull = GL_FRONT )
-		if self.draw_front : self.robot.draw_volumes( cull = GL_BACK  )
 
 	def _update_proj( self ) :
 		glMatrixMode(GL_PROJECTION)
@@ -277,8 +165,15 @@ class Scene :
 		self.height = h
 		self.set_ratio( float(w)/float(h) )
 
-	def mouse_move( self , df ) :
-		self.camera.rot( *map( lambda x : -x*.2 , df ) )
+	def mouse_move( self , df , buts ) :
+		if 1 in buts and buts[1] :
+			mv = np.array( (-df[0],df[1],0,0) , np.float )
+			mv *= .01
+			self.ctl.move( np.dot( mv , np.linalg.inv(self.camera.m) ) )
+		if 2 in buts and buts[2] :
+			self.ctl.rotate( -df[0]*0.01 , np.dot( np.array((0,0,1,0)) , np.linalg.inv(self.camera.m) ) )
+		elif 3 in buts and buts[3] :
+			self.camera.rot( *map( lambda x : -x*.2 , df ) )
 
 	def key_pressed( self , mv ) :
 		self.camera.move( *map( lambda x : x*.25 , mv ) )

@@ -54,9 +54,9 @@ class Robot( Drawable ) :
 	def draw( self , sparks = True ) :
 		glMatrixMode(GL_MODELVIEW)
 		glPushMatrix()
-		for i in range(3,4) :
+		for i in range(6) :
 			glColor3f(*self.colors[i])
-#            glMultTransposeMatrixf( self.ms[i] )
+			glMultTransposeMatrixf( self.ms[i] )
 			self.meshes[i].draw()
 		glPopMatrix()
 		if sparks : self.sparks.draw()

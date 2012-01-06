@@ -1,4 +1,4 @@
-import sys
+import sys , traceback
 
 import pygtk
 pygtk.require('2.0')
@@ -24,11 +24,11 @@ class GLDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
 
 		self.todraw = []
 
-	def add( self , painter ):
-		self.todraw.append(painter)
+	def add( self , painter , viewport = (0,0,1,1) ):
+		self.todraw.append( (painter,viewport) )
 
 	def remove( self , painter ):
-		self.todraw = [ p for p in self.todraw if p != painter ]
+		self.todraw = [ p for p in self.todraw if p[0] != painter ]
 
 	def _on_realize(self, *args):
 		# Obtain a reference to the OpenGL drawable
@@ -43,7 +43,7 @@ class GLDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
 			return
 
 		for p in self.todraw :
-			p.gfx_init()
+			p[0].gfx_init()
 
 		# OpenGL end
 		gldrawable.gl_end()
@@ -63,13 +63,6 @@ class GLDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
 		if not gldrawable.gl_begin(glcontext):
 			return False
 
-		glViewport(0, 0, self.allocation.width, self.allocation.height)
-
-		glMatrixMode(GL_PROJECTION)
-		glLoadIdentity()
-		glOrtho( -5 , 5 , -5 , 5 , -1 , 100 )
-		glMatrixMode(GL_MODELVIEW)
-
 		# OpenGL end
 		gldrawable.gl_end()
 
@@ -85,15 +78,20 @@ class GLDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
 		if not gldrawable.gl_begin(glcontext):
 			return False
 
+
 		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
 
 		try :
 			for p in self.todraw :
-				p.draw()
-		except OpenGL.error.Error as e :
-			print 'OpenGL error: ' + str(e)
+				self.__set_viewport( p[1] )
+				p[0].draw()
+		except Exception as e :
+			t , v , tb = sys.exc_info()
+			print
+			print 'Traceback:'
+			traceback.print_tb( tb )
+			print
+			print '%s: %s' % (type(e).__name__ , str(e))
 			sys.exit(0)
 
 		if gldrawable.is_double_buffered():
@@ -105,4 +103,8 @@ class GLDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
 		gldrawable.gl_end()
 
 		return False
+
+	def __set_viewport( self , v ) :
+		glViewport( *map( int , (self.allocation.width * v[0] , self.allocation.height * v[1] , self.allocation.width * v[2] , self.allocation.height * v[3]) ) )
+
 

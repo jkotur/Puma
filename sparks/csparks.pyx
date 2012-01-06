@@ -9,8 +9,8 @@ import math as m
 import numpy as np
 
 cdef float Gx = 0
-cdef float Gy =-9
-cdef float Gz = 0
+cdef float Gy = 0
+cdef float Gz =-9
 
 @cython.boundscheck(False)
 cpdef int update( np.ndarray[ double ] pos , np.ndarray[ double ] vel , np.ndarray[ double ] col , np.ndarray[ double ] life , double dt , int l ) :

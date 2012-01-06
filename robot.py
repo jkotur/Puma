@@ -23,23 +23,28 @@ class Robot( Drawable ) :
 
 		self.sparks = Sparks()
 
-	def resolve( self , pos , norm ) :
+	def resolve( self , pos , frame ) :
 		rots = None
 		try :
-			rots = self.inverse_kinematics( pos , norm ) 
+			rots = self.inverse_kinematics( pos , frame ) 
 		except ValueError , e :
-			rots = [0]*5
+			rots = [0]*9
+
+#        print rots
 
 		self.ms = [ 
-			tr.identity_matrix() ,
-			tr.rotation_matrix( rots[0] , (0,1,0) , (0,0,0) ) ,
-			tr.rotation_matrix( rots[1] , (0,0,1) , (0,.27,0) ) ,
-			tr.rotation_matrix( rots[2] , (0,0,1) , (-.91,.27,0) ) ,
-			tr.rotation_matrix( rots[3] , (1,0,0) , (0,.27,-.26) ) ,
-			tr.rotation_matrix( rots[4] , (0,0,1) , (-1.72,.27,0) )
+			tr.rotation_matrix( rots[0] , (0,0,1) ) ,
+			tr.translation_matrix( ( 0, 0, rots[1] ) ) ,
+			tr.rotation_matrix( rots[2] , (0,1,0) ) ,
+			tr.translation_matrix( ( rots[3], 0, 0 ) ) ,
+			tr.rotation_matrix( rots[4] , (0,1,0) ) ,
+			tr.translation_matrix( ( 0, 0, -rots[5] ) ) ,
+			tr.rotation_matrix( rots[6] , (0,0,1)  ) ,
+			tr.translation_matrix( ( rots[7], 0, 0 ) ) ,
+			tr.rotation_matrix( rots[8] , (0,0,1) )
 		]
 
-		self.sparks.spawn( np.resize(pos,3) , norm )
+		self.sparks.spawn( np.resize(pos,3) , frame[0] )
 
 	def create_volumes( self , pos ) :
 		p = np.resize( pos , 3 )
@@ -53,13 +58,21 @@ class Robot( Drawable ) :
 
 	def draw( self , sparks = True ) :
 		glMatrixMode(GL_MODELVIEW)
-		glPushMatrix()
-		for i in range(6) :
-			glColor3f(*self.colors[i])
-			glMultTransposeMatrixf( self.ms[i] )
-			self.meshes[i].draw()
-		glPopMatrix()
 		if sparks : self.sparks.draw()
+
+		zr = np.array((0,0,0,1))
+		pts = [ zr ] * 5
+		for i in range(3,-1,-1) :
+			for j in range(i+1,5) :
+				pts[j] = np.dot( self.ms[2*i+1] , pts[j] )
+				pts[j] = np.dot( self.ms[2*i  ] , pts[j] )
+
+#        print np.array(pts)
+
+		glBegin(GL_LINE_STRIP)
+		for p in pts :
+			glVertex3f( p[0] , p[1] , p[2] )
+		glEnd()
 
 	def draw_volumes( self , cull = GL_NONE , visible = False ) :
 		ml = glGetFloatv(GL_MODELVIEW_MATRIX)
@@ -72,32 +85,42 @@ class Robot( Drawable ) :
 	def update( self , dt ) :
 		self.sparks.update( dt )
 
-	def inverse_kinematics( self , pos ,  normal ) :
-		l1 , l2 , l3 = .91 , .81 , .33
-		dy , dz  = .27 , .26 
+	def inverse_kinematics( self , pos ,  frame ) :
+		l1 , l3 , l4 = 1 , 1 , 1 
 
-		normal = normal / la.norm( normal )
+#        p5 = np.array((pos[0],pos[2],pos[1]))
+		p5 = pos
 
-		pos1 = pos + normal * l3
+		x =-frame[0]
+		y =-frame[1]
+		z =-frame[2]
 
-		e = m.sqrt(pos1[2]*pos1[2]+pos1[0]*pos1[0]-dz*dz)
+		a1 = m.atan2( p5[1] - l4 * x[1] , p5[0] - l4* x[0] )
+		c1 = m.cos(a1)
+		s1 = m.sin(a1)
 
-		a1 = m.atan2(pos1[2], -pos1[0]) + m.atan2(dz, e)
+		a4 = m.asin( c1 * x[1] - s1 * x[0] ) # FIXME: przypadki
+		c4 = m.cos(a4)
+		s4 = m.sin(a4)
 
-		pos2 = np.array( [ e , pos1[1]-dy , .0 ] );
-		a3 = -m.acos(min(1.0,(pos2[0]*pos2[0]+pos2[1]*pos2[1]-l1*l1-l2*l2)/(2.0*l1*l2)))
-		k = l1 + l2 * m.cos(a3)
-		l = l2 * m.sin(a3)
-		a2 = -m.atan2(pos2[1],m.sqrt(pos2[0]*pos2[0]+pos2[2]*pos2[2])) - m.atan2(l,k);
+		c5 = ( c1*y[1] - s1*y[0] ) / c4 
+		s5 = ( s1*z[0] - c1*z[1] ) / c4
+		a5 = m.atan2( s5 , c5 )
 
-		rotmat = tr.rotation_matrix( -a1 , (0,1,0) ) 
-		normal1 = np.resize( np.dot( rotmat , np.resize( normal , 4 ) ) , 3 )
+		a2 = m.atan( -(c1*c4*(p5[2] - l4*x[2] - l1) + l3*(x[0] + s1*s4))/
+							(c4*(p5[0]-l4*x[0]) - c1*l3*x[2]) ) #FIXME: przypadki
+		c2 = m.cos(a2)
+		s2 = m.sin(a2)
 
-		rotmat = tr.rotation_matrix( -a2-a3 , (0,0,1) ) 
-		normal1 = np.resize( np.dot( rotmat , np.resize( normal1, 4 ) ) , 3 )
+		q2 = (c4*(p5[0]-l4*x[0])-c1*l3*x[2])/(c1*c2*c4)
 
-		a5 = m.acos( normal1[0] )
-		a4 = m.atan2(normal1[2], normal1[1])
+		c23 = (x[0] + s1*s4) / (c1*c4)
+		s23 = -x[2]/c4
+		a23 = m.atan2( s23 , c23 )
 
-		return a1 , a2 , a3 , a4 , a5
+		a3 = a23 - a2
+
+#        a1 , a2 , a3 , a4 , a5 , q2  = 0 , -m.pi / 4 , m.pi/4 , 0 , 0 , 1
+
+		return a1 , l1 , a2 , q2 , a3 , l3 , a4 , l4 , a5
 

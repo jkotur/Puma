@@ -63,7 +63,7 @@ class Scene :
 		self.im[3] = [ 0 , 0 , 0 , 1 ]
 
 	def gfx_init( self ) :
-		self.camera = Camera( ( 2 , 1 ,  5 ) , ( 0 , 0 , 0 ) , ( 0 , 1 , 0 ) )
+		self.camera = Camera( ( 0 , -3 , 0 ) , ( 0 , 0 , 0 ) , ( 0 , 0 , 1 ) )
 
 		self._update_proj()
 
@@ -97,10 +97,7 @@ class Scene :
 	def _update_scene( self , dt ) :
 		self.robot.update( dt )
 
-		pos = self.ctl.pos
-		nrm = self.ctl.dir
-
-		self.robot.resolve( pos , nrm )
+		self.robot.resolve( self.ctl.pos , self.ctl.frm )
 
 
 	def _draw_scene( self ) :

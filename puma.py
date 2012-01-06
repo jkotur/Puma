@@ -10,7 +10,8 @@ from OpenGL.GL import *
 
 from glwidget import GLDrawingArea
 
-from scene import Scene
+from anim_pos import *
+from anim_state import *
 
 ui_file = "puma.ui"
 
@@ -52,11 +53,12 @@ class App(object):
 		win_main.connect('key-press-event'  , self._on_key_pressed  )
 		win_main.connect('key-release-event', self._on_key_released )
 
-		self.scene = Scene( self.fov , .01 , self.near , self.far , meshes )
-		self.drawing_area.add( self.scene , (.0,0,1,1) )
-#        self.drawing_area.add( self.scene , (.5,0,.5,1) )
+		self.pscene = AnimPosition( 5.0 , self.fov , .01 , self.near , self.far , meshes )
+		self.sscene = AnimState   ( 5.0 , self.fov , .01 , self.near , self.far , meshes )
+		self.drawing_area.add( self.pscene , (.0,0,.5,1) )
+		self.drawing_area.add( self.sscene , (.5,0,.5,1) )
 
-		print 'Scene added'
+		print 'Scenes added'
 
 		win_main.show_all()
 
@@ -64,7 +66,8 @@ class App(object):
 		height = self.drawing_area.allocation.height
 		ratio = float(width)/float(height)
 
-		self.scene.set_ratio( ratio )
+		self.pscene.set_ratio( ratio )
+		self.sscene.set_ratio( ratio )
 
 		builder.connect_signals(self)
 
@@ -94,11 +97,14 @@ class App(object):
 
 		ratio = float(width)/float(height)
 
-		self.scene.set_screen_size( width , height )
+		self.pscene.set_screen_size( width , height )
+		self.sscene.set_screen_size( width , height )
 
 	def _on_button_pressed( self , widget , data=None ) :
 		if data.button == 1 or data.button == 2 or data.button == 3 :
 			self.mouse_pos = data.x , data.y
+		self.pscene.mouse_pressed( data.button )
+		self.sscene.mouse_pressed( data.button )
 		self.button[data.button] = True
 		self._refresh()
 
@@ -108,7 +114,8 @@ class App(object):
 	def _on_mouse_motion( self , widget , data=None ) :
 		diff = map( op.sub , self.mouse_pos , (data.x , data.y) )
 
-		self.scene.mouse_move( diff , self.button )
+		self.pscene.mouse_move( diff , self.button )
+		self.sscene.mouse_move( diff , self.button )
 
 		self.mouse_pos = data.x , data.y
 		self._refresh() 
@@ -127,6 +134,8 @@ class App(object):
 
 	
 	def _on_key_released( self , widget , data=None ) :
+		self.pscene.key_pressed( gtk.gdk.keyval_to_unicode(data.keyval))
+		self.sscene.key_pressed( gtk.gdk.keyval_to_unicode(data.keyval))
 		for i in range(len(self.dirskeys)) :
 			if (data.keyval,True) in self.dirskeys[i][0] :
 				self.dirskeys[i][0][ self.dirskeys[i][0].index( (data.keyval,True) ) ] = (data.keyval,False)
@@ -136,21 +145,26 @@ class App(object):
 				self.move[i]+= 1
 
 	def _move_callback( self ) :
-		self.scene.key_pressed( self.move )
+		self.pscene.cam_move( self.move )
+		self.sscene.cam_move( self.move )
 		self.drawing_area.queue_draw()
 		return any(self.move)
 
 	def on_cbut_robot_toggled( self , widget , data=None ) :
-		self.scene.draw_robot = not self.scene.draw_robot
+		self.pscene.draw_robot = not self.pscene.draw_robot
+		self.sscene.draw_robot = not self.sscene.draw_robot
 
 	def on_cbut_sparks_toggled( self , widget , data=None ) :
-		self.scene.draw_sparks = not self.scene.draw_sparks
+		self.pscene.draw_sparks = not self.pscene.draw_sparks
+		self.sscene.draw_sparks = not self.sscene.draw_sparks
 
 	def on_cbut_volume_back_toggled( self , widget , data=None ) :
-		self.scene.draw_back = not self.scene.draw_back
+		self.pscene.draw_back = not self.pscene.draw_back
+		self.sscene.draw_back = not self.sscene.draw_back
 
 	def on_cbut_volume_front_toggled( self , widget , data=None ) :
-		self.scene.draw_front = not self.scene.draw_front
+		self.pscene.draw_front = not self.pscene.draw_front
+		self.sscene.draw_front = not self.sscene.draw_front
 
 	def init_glext(self):
 		# Query the OpenGL extension version.

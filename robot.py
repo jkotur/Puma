@@ -25,16 +25,11 @@ class Robot( Drawable ) :
 
 		self.state = (0,1,0,1,0,1,0,1,0)
 
-	def resolve( self , pos , frame ) :
-		try :
-			self.state = self.inverse_kinematics( pos , frame , self.state )
-		except ValueError , e :
-			self.state = (0,1,0,1,0,1,0,1,0)
+	def get_state( self ) :
+		return self.state
 
-#        def rtd( i ) :
-#            return self.state[i] * 180.0 / m.pi
-
-#        print rtd(0) , rtd(2) , rtd(4) , rtd(6) , rtd(8)
+	def set_state( self , state ) :
+		self.state = state
 
 		self.ms = [ 
 			tr.rotation_matrix( self.state[0] , (0,0,1) ) ,
@@ -48,7 +43,18 @@ class Robot( Drawable ) :
 			tr.rotation_matrix( self.state[8] , (0,0,1) )
 		]
 
-		self.sparks.spawn( np.resize(pos,3) , frame[0] )
+
+	def resolve( self , pos , frame ) :
+		try :
+			self.set_state( self.inverse_kinematics( pos , frame , self.state ) )
+		except ValueError , e :
+			self.set_state( (0,1,0,1,0,1,0,1,0) )
+
+		def rtd( i ) :
+			return self.state[i] * 180.0 / m.pi
+
+		print rtd(0) , rtd(2) , rtd(4) , rtd(6) , rtd(8)
+
 
 	def create_volumes( self , pos ) :
 		p = np.resize( pos , 3 )
@@ -79,6 +85,9 @@ class Robot( Drawable ) :
 			glVertex3f( pts[i][0] , pts[i][1] , pts[i][2] )
 		glEnd()
 
+		self.sparks.spawn( np.resize(pts[-1],3) , pts[-2] - pts[-1] )
+
+
 	def draw_volumes( self , cull = GL_NONE , visible = False ) :
 		ml = glGetFloatv(GL_MODELVIEW_MATRIX)
 		glPushMatrix()
@@ -97,24 +106,30 @@ class Robot( Drawable ) :
 		y =-frame[1]
 		z =-frame[2]
 
+		def rtd( a ) :
+			return a * 180.0 / m.pi
+
 		a1 = m.atan( (p5[1] - l4 * x[1])/(p5[0] - l4* x[0]) )
+		print rtd(a1)
 		if m.fabs( a1 - os[0] ) > m.fabs( a1 + m.pi - os[0] ) : 
 			a1 += m.pi
 		c1 = m.cos(a1)
 		s1 = m.sin(a1)
 
 		a4 = m.asin( c1 * x[1] - s1 * x[0] )
-		if m.fabs( a4 - os[6] ) > m.fabs( a4 + m.pi - os[6] ) : 
-			a4 += m.pi
+#        if m.fabs( a4 - os[6] ) > m.fabs( a4 + m.pi - os[6] ) : 
+#            a4 += m.pi
 		c4 = m.cos(a4)
 		s4 = m.sin(a4)
 
 		c5 = ( c1*y[1] - s1*y[0] ) / c4 
 		s5 = ( s1*z[0] - c1*z[1] ) / c4
-		a5 = m.atan2( s5 , c5 )
+		a5 = m.atan( s5 / c5 )
+		if m.fabs( a5 - os[0] ) > m.fabs( a5 + m.pi - os[0] ) : 
+			a5 += m.pi
 
 		a2 = m.atan( -(c1*c4*(p5[2] - l4*x[2] - l1) + l3*(x[0] + s1*s4))/
-							(c4*(p5[0]-l4*x[0]) - c1*l3*x[2]) ) #FIXME: przypadki
+							(c4*(p5[0]-l4*x[0]) - c1*l3*x[2]) )
 		if m.fabs( a2 + os[2] ) > m.fabs( a2 + m.pi - os[2] ) : 
 			a1 += m.pi
 		c2 = m.cos(a2)

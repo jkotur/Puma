@@ -2,6 +2,8 @@
 import sys
 import time
 
+from copy import deepcopy
+
 import numpy as np
 import numpy.linalg as la
 import transformations as tr
@@ -28,6 +30,8 @@ class Scene :
 		self.far = far
 		self.ratio = ratio
 
+		self.anim_state = False
+
 		self.camera = None
 		self.plane  = Plane( (2,2) )
 
@@ -37,6 +41,10 @@ class Scene :
 
 		self.robot = Robot( robot_files )
 		self.ctl   = Controler()
+
+		self.ctlnum = 2
+		self.ctls  = [ None ] * self.ctlnum
+		self.ctlid = 0
 
 		self.x = 0.0
 
@@ -97,14 +105,15 @@ class Scene :
 	def _update_scene( self , dt ) :
 		self.robot.update( dt )
 
-		self.robot.resolve( self.ctl.pos , self.ctl.frm )
-
-
 	def _draw_scene( self ) :
 		glClearStencil(0);
 		glClear(GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
 		self.ctl.draw()
+
+		for ctl in self.ctls :
+			if ctl != None :
+				ctl.draw()
 
 		self._set_ambient()
 		self._set_diffuse()
@@ -173,6 +182,24 @@ class Scene :
 		elif 3 in buts and buts[3] :
 			self.camera.rot( *map( lambda x : -x*.2 , df ) )
 
-	def key_pressed( self , mv ) :
+	def mouse_pressed( self , but ) :
+		pass
+
+	def anim_toggle( self ) :
+		self.anim_state = not self.anim_state
+		self.time_beg = self.time
+
+	def key_pressed( self, key ) :
+		if chr(key) == ' ' :
+			self.ctls[ self.ctlid ] = deepcopy( self.ctl )
+			self.ctlid += 1
+			self.ctlid %= self.ctlnum
+		elif key == 0 :
+			self.anim_toggle()
+
+	def cam_move( self , mv ) :
 		self.camera.move( *map( lambda x : x*.25 , mv ) )
+
+	def anim( self , state ) :
+		self.anim_state = state
 
